@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Status Gizi Real-time (WHO-LMS)</title>
+    <!-- Memuat Tailwind CSS untuk styling modern dan responsif -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': '#059669', // Emerald 600
+                        'secondary': '#1f2937', // Gray 800
+                        'warning': '#f59e0b', // Amber 500
+                        'danger': '#ef4444', // Red 500
+                        'success': '#10b981', // Green 500
+                        'info': '#3b82f6', // Blue 500
+                        'subtle': '#d1d5db', // Gray 300
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Gaya kustom */
+        body {
+            background-color: #f9fafb; /* Gray 50 */
+            padding: 8px; /* Mengurangi padding body menjadi p-2 */
+        }
+        .card {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        .auto-calculated-field {
+            background-color: #f3f4f6;
+            color: #4b5563;
+            font-weight: 600;
+        }
+        /* Membuat tabel profil lebih rapat untuk layar kecil */
+        .profile-table th, .profile-table td {
+            padding: 4px 6px; /* Padding sangat kecil */
+            text-align: left;
+            font-size: 0.75rem; /* Text xs */
+        }
+        .profile-table th {
+            background-color: #e5e7eb; /* Gray 200 */
+            font-weight: 600;
+            color: #1f2937;
+            position: sticky;
+            top: 0;
+        }
+        .profile-table tr:nth-child(even) {
+            background-color: #f9fafb; /* Lighter stripe */
+        }
+        .profile-table tr:hover {
+            background-color: #f3f4f6; /* Hover effect */
+            cursor: pointer;
+        }
+        /* Menyesuaikan lebar header tabel agar lebih compact di mobile */
+        .profile-table th:nth-child(1) { width: 5%; } /* No */
+        .profile-table th:nth-child(3) { width: 5%; } /* J.Kel */
+        .profile-table th:nth-child(7), .profile-table th:nth-child(8), .profile-table th:nth-child(9), .profile-table th:nth-child(10) { 
+            font-size: 0.65rem; /* Z-score headers even smaller */
+        }
+    </style>
+</head>
+<body class="font-sans min-h-screen p-2 flex flex-col items-center">
+
+    <div class="w-full max-w-6xl bg-white card rounded-2xl p-3 md:p-8 mt-4">
+        <h1 class="text-2xl md:text-4xl font-extrabold text-secondary mb-2 text-center">
+            Kalkulator Status Gizi Anak (WHO-LMS)
+        </h1>
+        <p class="text-center text-gray-500 text-sm mb-4">
+            Perhitungan Z-score Real-time menggunakan Metode LMS WHO (Data 0-19 tahun).
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            
+            <!-- KOLOM DATA ANAK & MANAJEMEN PROFIL (KIRI) -->
+            <div class="md:col-span-1 space-y-3 p-2 border border-subtle rounded-xl bg-gray-50">
+                <h2 class="text-lg font-bold text-primary border-b pb-1">Manajemen Profil Anak</h2>
+                
+                <!-- Nama Anak & ID -->
+                <div class="space-y-0.5">
+                    <label for="child-name" class="block text-xs font-medium text-gray-700">Nama Anak</label>
+                    <input type="text" id="child-name" value="Anak Saya" oninput="calculateNutritionStatus()"
+                           class="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                    <p id="child-id-display" class="text-xs text-gray-400">ID Profil: Baru</p>
+                </div>
+
+                <!-- Aksi Simpan/Hapus -->
+                <div class="flex space-x-1 pt-1">
+                    <button onclick="saveChildProfile()" class="w-full p-2 text-sm bg-primary text-white font-bold rounded-lg hover:bg-green-700 transition duration-150">
+                        Simpan
+                    </button>
+                    <button onclick="clearCurrentChild()" class="w-full p-2 text-sm bg-gray-300 text-secondary font-bold rounded-lg hover:bg-gray-400 transition duration-150">
+                        Profil Baru
+                    </button>
+                </div>
+
+                <!-- Daftar Profil -->
+                <div class="mt-2">
+                    <h3 class="text-sm font-bold text-secondary mb-1">Profil Tersimpan</h3>
+                    
+                    <!-- Input Pencarian Profil -->
+                    <input type="text" id="profile-search" oninput="filterChildList()" placeholder="Cari Nama..."
+                           class="w-full p-1.5 mb-1 border border-gray-300 rounded-lg text-xs focus:ring-primary focus:border-primary transition duration-150">
+                           
+                    <div id="child-list" class="space-y-1 max-h-40 overflow-y-auto bg-white rounded-lg border">
+                        <p class="text-xs text-gray-500 p-2">Memuat data...</p>
+                    </div>
+                </div>
+
+                <h2 class="text-lg font-bold text-primary border-b pb-1 pt-2">Data Antropometri</h2>
+
+                <!-- Tanggal Sekarang (Otomatis) -->
+                <div class="space-y-0.5">
+                    <label for="current-date-display" class="block text-xs font-medium text-gray-700">Tanggal Sekarang</label>
+                    <div id="current-date-display"
+                           class="w-full p-2 text-sm border border-gray-300 rounded-lg auto-calculated-field text-gray-600">
+                        <!-- Tanggal akan diisi oleh JS -->
+                    </div>
+                </div>
+
+                <!-- Tanggal Lahir -->
+                <div class="space-y-0.5">
+                    <label for="dob" class="block text-xs font-medium text-gray-700">Tanggal Lahir</label>
+                    <input type="date" id="dob" oninput="calculateNutritionStatus()" 
+                           class="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                </div>
+
+                <!-- Usia (Otomatis) -->
+                <div class="space-y-0.5">
+                    <label for="age-display" class="block text-xs font-medium text-gray-700">Usia Terhitung</label>
+                    <div id="age-display"
+                           class="w-full p-2 text-sm border border-gray-300 rounded-lg auto-calculated-field text-gray-600">
+                        <!-- Usia akan diisi oleh JS -->
+                    </div>
+                </div>
+                
+                <!-- Jenis Kelamin -->
+                <div class="space-y-0.5">
+                    <label for="sex" class="block text-xs font-medium text-gray-700">Jenis Kelamin</label>
+                    <select id="sex" oninput="calculateNutritionStatus()" 
+                            class="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                        <option value="male">Laki-laki</option>
+                        <option value="female">Perempuan</option>
+                    </select>
+                </div>
+
+                <!-- Berat Badan (kg) -->
+                <div class="space-y-0.5">
+                    <label for="weight" class="block text-xs font-medium text-gray-700">Berat Badan (kg)</label>
+                    <input type="number" id="weight" value="13.0" step="0.1" min="0" oninput="calculateNutritionStatus()" 
+                           placeholder="13.0" 
+                           class="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                </div>
+
+                <!-- Tinggi Badan (cm) -->
+                <div class="space-y-0.5">
+                    <label for="height" class="block text-xs font-medium text-gray-700">TB/PB (cm)</label>
+                    <input type="number" id="height" value="90.0" step="0.1" min="0" oninput="calculateNutritionStatus()" 
+                           placeholder="90.0" 
+                           class="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                </div>
+            </div>
+
+            <!-- KOLOM HASIL & VISUALISASI (KANAN) -->
+            <div class="md:col-span-3 space-y-3">
+                <h2 class="text-xl font-bold text-secondary mb-2">Hasil Z-score & Visualisasi</h2>
+
+                <!-- Area Pesan Kesalahan/Informasi -->
+                <div id="message-box" class="p-2 text-xs text-green-800 bg-green-100 border-l-4 border-success rounded-lg">
+                    <!-- Pesan akan diisi di sini setelah perhitungan -->
+                </div>
+
+                <!-- Pilihan Indeks untuk Visualisasi -->
+                <div class="flex items-center space-x-3 p-2 bg-gray-100 rounded-lg">
+                    <label for="visualization-index" class="text-sm font-medium text-gray-700">Visualisasi Kurva:</label>
+                    <select id="visualization-index" onchange="updateVisualization()" 
+                            class="p-1.5 border border-gray-300 rounded-lg text-sm bg-white">
+                        <option value="WFA">BB/U (WFA)</option>
+                        <option value="HFA">TB/U (HFA)</option>
+                        <option value="WFL">BB/TB (WFL)</option>
+                        <option value="BFA">IMT/U (BFA)</option>
+                    </select>
+                    <span id="zscore-label" class="font-bold text-primary text-sm"></span>
+                </div>
+
+                <!-- Canvas Visualisasi -->
+                <div class="w-full bg-white border border-gray-300 rounded-xl shadow-inner overflow-hidden">
+                    <canvas id="zscore-canvas" width="600" height="300" class="w-full h-auto"></canvas>
+                </div>
+
+                <!-- Grid Hasil untuk 4 Indeks -->
+                <div class="mt-4">
+                    <h2 class="text-lg font-bold text-secondary mb-2">Ringkasan Klasifikasi</h2>
+                    <div id="results-grid" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                        <!-- Cards Hasil akan di-render di sini -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="mt-6 p-3 text-xs text-gray-600 bg-gray-100 rounded-lg">
+            <p class="font-bold text-secondary">Catatan Implementasi Teknis:</p>
+            <ul class="list-disc list-inside ml-2 mt-1 space-y-0.5">
+                <li>**Penyimpanan Data:** Profil anak disimpan secara persisten menggunakan **Firestore**.</li>
+                <li>**Data LMS WHO:** Data LMS akurat 0-60 bulan (WHO Child Growth Standards) dimuat.</li>
+                <li>**Ekstensi Usia Akurat:** Usia 61-228 bulan (hingga 19 tahun) menggunakan **data LMS WHO Reference 5-19 tahun yang akurat** untuk TB/U dan IMT/U.</li>
+                <li>**Batasan:** BB/U dan BB/TB dinonaktifkan di atas 60 bulan.</li>
+                <li>**Visualisasi:** Grafik Z-score menunjukkan posisi anak relatif terhadap garis -3, -2, 0, +2, +3 SD.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Import Firebase Services (MUST BE type="module") -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, query, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+
+        // Global Variables for Firebase instances
+        let db, auth;
+        window.db = db; // Make global for use outside module
+        window.auth = auth;
+        window.userId = null;
+        window.allChildProfiles = []; // Store all profiles globally
+
+        
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+        window.db = db; 
+        window.auth = auth;
+
+        // --- FIREBASE UTILITY FUNCTIONS ---
+
+        /** Signs in the user and sets up the listener for child profiles. */
+        window.setupFirebase = async function() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token.length > 0) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        window.userId = user.uid;
+                        console.log("Firebase Auth Ready. User ID:", window.userId);
+                        window.loadChildProfiles();
+                    } else {
+                        console.log("No user signed in. Using anonymous ID.");
+                        window.userId = 'anonymous'; // Fallback
+                    }
+                });
+            } catch (e) {
+                console.error("Firebase initialization or sign-in failed:", e);
+                window.userId = 'error';
+            }
+        }
+        
+        /** Saves the current child profile data to Firestore. */
+        window.saveChildProfile = async function() {
+            if (!window.userId || window.userId === 'anonymous') {
+                console.error("Authentication not ready or user is anonymous. Cannot save.");
+                return;
+            }
+
+            const name = document.getElementById('child-name').value;
+            const dob = document.getElementById('dob').value;
+            const sex = document.getElementById('sex').value;
+            const weight = document.getElementById('weight').value;
+            const height = document.getElementById('height').value;
+
+            // Ambil status gizi saat ini yang sudah dihitung (disimpan di global)
+            const lastStatus = window.currentZScoreResults;
+
+            if (!name || !dob || !weight || !height || !lastStatus || Object.keys(lastStatus).length === 0) {
+                console.error("All fields must be filled and status must be calculated to save.");
+                document.getElementById('message-box').innerHTML = '<span class="text-red-800">Gagal Simpan: Semua field data (Nama, Tgl Lahir, BB, TB) harus diisi dan dihitung.</span>';
+                document.getElementById('message-box').className = 'p-2 text-xs bg-red-100 border-l-4 border-danger rounded-lg';
+                return;
+            }
+            
+            const docId = window.currentChildId || Date.now().toString();
+            const childData = { 
+                name, 
+                dob, 
+                sex, 
+                weight: parseFloat(weight), 
+                height: parseFloat(height), 
+                lastStatus: JSON.stringify(lastStatus), // Simpan hasil Z-score sebagai string JSON
+                savedAt: new Date() 
+            };
+            const docRef = doc(db, 'artifacts', appId, 'users', window.userId, 'children', docId);
+
+            try {
+                await setDoc(docRef, childData);
+                window.currentChildId = docId;
+                document.getElementById('child-id-display').textContent = `ID Profil: ${docId.substring(docId.length - 8)}`;
+                document.getElementById('message-box').innerHTML = '<span class="text-green-800">Profil anak berhasil disimpan!</span>';
+                document.getElementById('message-box').className = 'p-2 text-xs bg-green-100 border-l-4 border-success rounded-lg';
+            } catch (e) {
+                console.error("Error saving document: ", e);
+                document.getElementById('message-box').innerHTML = '<span class="text-red-800">Gagal Simpan ke Database. Lihat konsol untuk detail.</span>';
+                document.getElementById('message-box').className = 'p-2 text-xs bg-red-100 border-l-4 border-danger rounded-lg';
+            }
+        }
+
+        /** Renders the list of child profiles as a table based on the global array (allChildProfiles) and search filter. */
+        window.renderChildList = function(profiles) {
+            const listContainer = document.getElementById('child-list');
+            const searchQuery = document.getElementById('profile-search').value.toLowerCase();
+            
+            const filteredProfiles = profiles.filter(p => 
+                p.name.toLowerCase().includes(searchQuery)
+            ).sort((a, b) => b.savedAt - a.savedAt); // Sort by most recently saved
+
+            let tableHTML = '';
+            
+            if (filteredProfiles.length === 0) {
+                listContainer.innerHTML = `<p class="text-xs text-gray-500 p-2">${searchQuery ? 'Tidak ada profil yang cocok.' : 'Belum ada profil tersimpan.'}</p>`;
+                return;
+            }
+
+            tableHTML += `
+                <div class="overflow-x-auto">
+                    <table class="profile-table w-full border-collapse">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Nama</th>
+                                <th>J.Kel</th>
+                                <th>Tgl. Lahir</th>
+                                <th>BB (kg)</th>
+                                <th>TB (cm)</th>
+                                <th colspan="4" class="text-center">Z-score Status Gizi</th>
+                                <th>Kategori Gizi</th>
+                                <th>Aksi</th>
+                            </tr>
+                            <tr>
+                                <th colspan="6"></th>
+                                <th>BB/U</th>
+                                <th>TB/U</th>
+                                <th>BB/TB</th>
+                                <th>IMT/U</th>
+                                <th colspan="2"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            filteredProfiles.forEach((data, index) => {
+                let status = {};
+                try {
+                    // Parse status yang disimpan sebagai string JSON
+                    status = data.lastStatus ? JSON.parse(data.lastStatus) : {};
+                } catch (e) {
+                    console.error("Failed to parse lastStatus:", e, data.lastStatus);
+                }
+
+                const wfaStatus = status.WFA || { zScore: 'N/A', status: 'N/A', colorClass: 'bg-gray-400' };
+                const hfaStatus = status.HFA || { zScore: 'N/A' };
+                const wflStatus = status.WFL || { zScore: 'N/A' };
+                const bfaStatus = status.BFA || { zScore: 'N/A' };
+                
+                // Ambil Kategori Gizi utama dari BB/U (WFA)
+                const mainCategory = wfaStatus.status;
+                const categoryColor = wfaStatus.colorClass;
+                
+                // Format tanggal lahir menjadi d-m-y
+                const formattedDob = data.dob ? new Date(data.dob + 'T00:00:00').toLocaleDateString('id-ID', {day: '2-digit', month: '2-digit', year: '2-digit'}) : 'N/A';
+                
+                // Tambahkan baris ke tabel
+                tableHTML += `
+                    <tr onclick="window.loadChildData('${data.id}', '${data.name}', '${data.dob}', '${data.sex}', '${data.weight}', '${data.height}')">
+                        <td>${index + 1}</td>
+                        <td class="font-bold text-secondary">${data.name}</td>
+                        <td>${data.sex === 'male' ? 'L' : 'P'}</td>
+                        <td class="whitespace-nowrap">${formattedDob}</td>
+                        <td>${data.weight.toFixed(1)}</td>
+                        <td>${data.height.toFixed(1)}</td>
+                        <td title="${wfaStatus.status}" class="text-center">${wfaStatus.zScore}</td>
+                        <td title="${hfaStatus.status}" class="text-center">${hfaStatus.zScore}</td>
+                        <td title="${wflStatus.status}" class="text-center">${wflStatus.zScore}</td>
+                        <td title="${bfaStatus.status}" class="text-center">${bfaStatus.zScore}</td>
+                        <td class="whitespace-nowrap">
+                            <span class="px-1 py-0.5 text-xs text-white rounded-md ${categoryColor}">${mainCategory.split(' ')[0]}</span>
+                        </td>
+                        <td>
+                            <button class="text-red-500 hover:text-red-700 text-xs font-bold" onclick="window.deleteChildProfile('${data.id}', event)">Hapus</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            listContainer.innerHTML = tableHTML;
+        }
+        
+        /** Loads all child profiles from Firestore and stores them globally. */
+        window.loadChildProfiles = function() {
+            if (!window.userId) return;
+
+            const q = query(collection(db, 'artifacts', appId, 'users', window.userId, 'children'));
+
+            onSnapshot(q, (snapshot) => {
+                // Konversi timestamp savedAt menjadi objek Date untuk sorting
+                window.allChildProfiles = snapshot.docs.map(doc => ({ 
+                    id: doc.id, 
+                    ...doc.data(), 
+                    savedAt: doc.data().savedAt?.toDate() || new Date(0) // Handle timestamp conversion
+                }));
+                window.renderChildList(window.allChildProfiles);
+            }, (error) => {
+                console.error("Error listening to documents: ", error);
+                document.getElementById('child-list').innerHTML = '<p class="text-xs text-red-500 p-2">Gagal memuat profil. Lihat konsol.</p>';
+            });
+        }
+        
+        /** Filters the child list based on the search input (triggered by oninput). */
+        window.filterChildList = function() {
+            window.renderChildList(window.allChildProfiles);
+        }
+
+        /** Deletes a specific child profile. */
+        window.deleteChildProfile = async function(docId, event) {
+            event.stopPropagation(); // Prevent loading the profile when deleting the button
+            
+            // Mengganti confirm() dengan prompt() untuk kepatuhan environment
+            const isConfirmed = prompt("Untuk menghapus profil ini, ketik 'HAPUS' di sini:"); 
+            if (isConfirmed !== 'HAPUS') return;
+
+            const docRef = doc(db, 'artifacts', appId, 'users', window.userId, 'children', docId);
+            try {
+                await deleteDoc(docRef);
+                if (window.currentChildId === docId) {
+                    window.clearCurrentChild();
+                }
+                document.getElementById('message-box').innerHTML = '<span class="text-green-800">Profil berhasil dihapus.</span>';
+                document.getElementById('message-box').className = 'p-2 text-xs bg-green-100 border-l-4 border-success rounded-lg';
+            } catch (e) {
+                console.error("Error deleting document: ", e);
+                document.getElementById('message-box').innerHTML = '<span class="text-red-800">Gagal menghapus profil.</span>';
+                document.getElementById('message-box').className = 'p-2 text-xs bg-red-100 border-l-4 border-danger rounded-lg';
+            }
+        }
+
+        /** Clears the current data and sets a new child profile mode. */
+        window.clearCurrentChild = function() {
+            window.currentChildId = null;
+            document.getElementById('child-id-display').textContent = 'ID Profil: Baru';
+            document.getElementById('child-name').value = 'Anak Baru';
+            
+            // Reset antropometri defaults
+            document.getElementById('dob').value = dateToISO(new Date(new Date().setFullYear(new Date().getFullYear() - 2)));
+            document.getElementById('sex').value = 'male';
+            document.getElementById('weight').value = 13.0;
+            document.getElementById('height').value = 90.0;
+            
+            window.calculateNutritionStatus();
+        }
+
+        /** Loads selected child data into the form. */
+        window.loadChildData = function(id, name, dob, sex, weight, height) {
+            window.currentChildId = id;
+            document.getElementById('child-id-display').textContent = `ID Profil: ${id.substring(id.length - 8)}`;
+            document.getElementById('child-name').value = name;
+            document.getElementById('dob').value = dob;
+            // Gunakan parseFloat dan toFixed untuk memastikan format data numerik yang benar
+            document.getElementById('sex').value = sex;
+            document.getElementById('weight').value = parseFloat(weight).toFixed(1);
+            document.getElementById('height').value = parseFloat(height).toFixed(1);
+            
+            window.calculateNutritionStatus();
+        }
+        
+        // Start Firebase setup
+        window.setupFirebase();
+
+    </script>
+    <!-- End of Module Script -->
+
+
+    <script>
+        // Batas Usia Maksimal: 19 tahun * 12 bulan = 228 bulan
+        const MAX_AGE_MONTHS = 228;
+
+        // --- FUNGSI INTERPOLASI LMS ---
+        
+        // Fungsi untuk menginterpolasi nilai L, M, S antara titik jangkar WHO
+        function interpolateLMS(anchors) {
+            const data = [];
+            for (let i = 0; i < anchors.length - 1; i++) {
+                const [age1, L1, M1, S1] = anchors[i];
+                const [age2, L2, M2, S2] = anchors[i + 1];
+
+                for (let age = age1; age < age2; age++) {
+                    const ratio = (age - age1) / (age2 - age1);
+                    const L = L1 + ratio * (L2 - L1);
+                    const M = M1 + ratio * (M2 - M1);
+                    const S = S1 + ratio * (S2 - S1);
+                    data.push([age, L, M, S]);
+                }
+            }
+            // Tambahkan titik jangkar terakhir
+            data.push(anchors[anchors.length - 1]);
+            return data;
+        }
+
+        // --- DATA WHO 0-60 BULAN (CHILD GROWTH STANDARDS) ---
+
+        // BB/U - Laki-laki (WFA Male 0-60m)
+        const WFA_M_LMS = [
+            [0, 1.156, 3.322, 0.145], [1, 1.146, 4.545, 0.141], [2, 1.132, 5.666, 0.136], [3, 1.111, 6.592, 0.131], [4, 1.085, 7.301, 0.126], 
+            [5, 1.057, 7.828, 0.122], [6, 1.026, 8.243, 0.118], [7, 0.993, 8.579, 0.114], [8, 0.96, 8.859, 0.111], [9, 0.925, 9.102, 0.108], 
+            [10, 0.891, 9.319, 0.106], [11, 0.855, 9.516, 0.104], [12, 0.82, 9.697, 0.102], [13, 0.784, 9.866, 0.101], [14, 0.749, 10.024, 0.099], 
+            [15, 0.713, 10.174, 0.098], [16, 0.678, 10.316, 0.097], [17, 0.643, 10.453, 0.096], [18, 0.609, 10.584, 0.095], [19, 0.575, 10.712, 0.094], 
+            [20, 0.542, 10.835, 0.093], [21, 0.51, 10.956, 0.093], [22, 0.477, 11.075, 0.092], [23, 0.446, 11.192, 0.092], [24, 0.415, 11.309, 0.091], 
+            [25, 0.384, 11.424, 0.091], [26, 0.354, 11.539, 0.09], [27, 0.325, 11.652, 0.09], [28, 0.297, 11.764, 0.09], [29, 0.27, 11.875, 0.089], 
+            [30, 0.243, 11.984, 0.089], [31, 0.217, 12.093, 0.089], [32, 0.191, 12.2, 0.089], [33, 0.166, 12.307, 0.088], [34, 0.142, 12.413, 0.088], 
+            [35, 0.118, 12.517, 0.088], [36, 0.095, 12.621, 0.088], [37, 0.073, 12.724, 0.088], [38, 0.051, 12.825, 0.087], [39, 0.03, 12.926, 0.087], 
+            [40, 0.01, 13.026, 0.087], [41, -0.009, 13.124, 0.087], [42, -0.027, 13.222, 0.087], [43, -0.044, 13.319, 0.087], [44, -0.061, 13.415, 0.087], 
+            [45, -0.076, 13.51, 0.087], [46, -0.09, 13.605, 0.087], [47, -0.103, 13.698, 0.087], [48, -0.115, 13.79, 0.087], [49, -0.125, 13.881, 0.088], 
+            [50, -0.134, 13.971, 0.088], [51, -0.141, 14.06, 0.088], [52, -0.146, 14.148, 0.088], [53, -0.149, 14.234, 0.088], [54, -0.151, 14.32, 0.089], 
+            [55, -0.15, 14.404, 0.089], [56, -0.147, 14.487, 0.089], [57, -0.142, 14.568, 0.089], [58, -0.134, 14.648, 0.09], [59, -0.124, 14.727, 0.09], 
+            [60, -0.112, 14.805, 0.09]
+        ];
+
+        // BB/U - Perempuan (WFA Female 0-60m)
+        const WFA_F_LMS = [
+            [0, 0.941, 3.23, 0.155], [1, 0.963, 4.225, 0.15], [2, 0.963, 5.176, 0.143], [3, 0.942, 5.952, 0.137], [4, 0.905, 6.551, 0.131], 
+            [5, 0.86, 7.025, 0.126], [6, 0.81, 7.422, 0.122], [7, 0.757, 7.765, 0.118], [8, 0.702, 8.058, 0.114], [9, 0.647, 8.32, 0.111], 
+            [10, 0.592, 8.561, 0.108], [11, 0.537, 8.784, 0.106], [12, 0.483, 8.995, 0.104], [13, 0.43, 9.196, 0.103], [14, 0.379, 9.387, 0.101], 
+            [15, 0.329, 9.57, 0.1], [16, 0.281, 9.746, 0.099], [17, 0.235, 9.916, 0.098], [18, 0.191, 10.08, 0.097], [19, 0.149, 10.24, 0.096], 
+            [20, 0.109, 10.395, 0.095], [21, 0.071, 10.547, 0.095], [22, 0.034, 10.695, 0.094], [23, -0.001, 10.84, 0.093], [24, -0.034, 10.983, 0.093], 
+            [25, -0.066, 11.123, 0.092], [26, -0.096, 11.262, 0.092], [27, -0.125, 11.399, 0.092], [28, -0.152, 11.534, 0.091], [29, -0.178, 11.667, 0.091], 
+            [30, -0.202, 11.799, 0.091], [31, -0.224, 11.93, 0.091], [32, -0.244, 12.059, 0.09], [33, -0.263, 12.187, 0.09], [34, -0.279, 12.313, 0.09], 
+            [35, -0.294, 12.438, 0.09], [36, -0.306, 12.562, 0.09], [37, -0.316, 12.684, 0.09], [38, -0.324, 12.805, 0.09], [39, -0.329, 12.925, 0.09], 
+            [40, -0.332, 13.044, 0.09], [41, -0.332, 13.161, 0.09], [42, -0.33, 13.277, 0.09], [43, -0.325, 13.392, 0.09], [44, -0.318, 13.506, 0.09], 
+            [45, -0.309, 13.619, 0.09], [46, -0.297, 13.73, 0.09], [47, -0.283, 13.84, 0.091], [48, -0.267, 13.948, 0.091], [49, -0.249, 14.055, 0.091], 
+            [50, -0.229, 14.161, 0.091], [51, -0.207, 14.265, 0.091], [52, -0.183, 14.367, 0.091], [53, -0.158, 14.468, 0.091], [54, -0.13, 14.567, 0.091], 
+            [55, -0.101, 14.665, 0.091], [56, -0.07, 14.761, 0.091], [57, -0.038, 14.856, 0.091], [58, -0.005, 14.949, 0.091], [59, 0.029, 15.04, 0.091], 
+            [60, 0.063, 15.131, 0.091]
+        ];
+
+        // BB/TB - Laki-laki (WFL Male 45-110cm)
+        const WFL_M_LMS = [
+            [45, 0.385, 2.76, 0.125], [46, 0.354, 2.91, 0.122], [47, 0.323, 3.06, 0.119], [48, 0.292, 3.22, 0.116], [49, 0.262, 3.39, 0.114], 
+            [50, 0.232, 3.56, 0.111], [51, 0.204, 3.73, 0.108], [52, 0.176, 3.91, 0.106], [53, 0.15, 4.09, 0.104], [54, 0.124, 4.27, 0.102], 
+            [55, 0.1, 4.45, 0.1], [56, 0.077, 4.63, 0.098], [57, 0.055, 4.81, 0.096], [58, 0.034, 4.99, 0.095], [59, 0.015, 5.17, 0.093], 
+            [60, -0.003, 5.35, 0.092], [61, -0.019, 5.53, 0.091], [62, -0.034, 5.7, 0.09], [63, -0.048, 5.88, 0.089], [64, -0.06, 6.05, 0.088], 
+            [65, -0.071, 6.22, 0.087], [66, -0.081, 6.39, 0.087], [67, -0.09, 6.55, 0.086], [68, -0.097, 6.72, 0.085], [69, -0.104, 6.88, 0.085], 
+            [70, -0.109, 7.04, 0.084], [71, -0.114, 7.2, 0.084], [72, -0.118, 7.36, 0.084], [73, -0.122, 7.52, 0.083], [74, -0.124, 7.67, 0.083], 
+            [75, -0.126, 7.83, 0.083], [76, -0.128, 7.98, 0.083], [77, -0.13, 8.14, 0.083], [78, -0.13, 8.29, 0.083], [79, -0.13, 8.45, 0.083], 
+            [80, -0.13, 8.6, 0.083], [81, -0.129, 8.76, 0.083], [82, -0.128, 8.91, 0.083], [83, -0.126, 9.07, 0.083], [84, -0.124, 9.22, 0.083], 
+            [85, -0.122, 9.38, 0.083], [86, -0.12, 9.53, 0.084], [87, -0.116, 9.68, 0.084], [88, -0.112, 9.84, 0.084], [89, -0.108, 9.99, 0.084], 
+            [90, -0.104, 10.15, 0.084], [91, -0.099, 10.3, 0.084], [92, -0.094, 10.46, 0.084], [93, -0.088, 10.61, 0.084], [94, -0.082, 10.76, 0.085], 
+            [95, -0.076, 10.92, 0.085], [96, -0.07, 11.07, 0.085], [97, -0.063, 11.23, 0.085], [98, -0.056, 11.38, 0.085], [99, -0.048, 11.54, 0.086], 
+            [100, -0.041, 11.69, 0.086], [101, -0.033, 11.85, 0.086], [102, -0.024, 12.0, 0.086], [103, -0.015, 12.16, 0.087], [104, -0.006, 12.31, 0.087], 
+            [105, 0.003, 12.47, 0.087], [106, 0.012, 12.63, 0.088], [107, 0.022, 12.78, 0.088], [108, 0.032, 12.94, 0.088], [109, 0.043, 13.09, 0.089], 
+            [110, 0.054, 13.25, 0.089]
+        ];
+
+        // BB/TB - Perempuan (WFL Female 45-110cm)
+        const WFL_F_LMS = [
+            [45, 0.207, 2.58, 0.125], [46, 0.187, 2.73, 0.123], [47, 0.168, 2.87, 0.12], [48, 0.15, 3.02, 0.118], [49, 0.133, 3.18, 0.115], 
+            [50, 0.117, 3.33, 0.113], [51, 0.102, 3.49, 0.111], [52, 0.089, 3.65, 0.109], [53, 0.077, 3.81, 0.107], [54, 0.066, 3.97, 0.105], 
+            [55, 0.056, 4.13, 0.103], [56, 0.048, 4.28, 0.101], [57, 0.04, 4.44, 0.099], [58, 0.034, 4.59, 0.098], [59, 0.028, 4.75, 0.096], 
+            [60, 0.024, 4.9, 0.095], [61, 0.021, 5.05, 0.093], [62, 0.018, 5.2, 0.092], [63, 0.017, 5.35, 0.091], [64, 0.016, 5.5, 0.09], 
+            [65, 0.016, 5.65, 0.089], [66, 0.017, 5.79, 0.088], [67, 0.018, 5.94, 0.088], [68, 0.02, 6.08, 0.087], [69, 0.022, 6.22, 0.086], 
+            [70, 0.025, 6.36, 0.086], [71, 0.028, 6.5, 0.085], [72, 0.032, 6.63, 0.085], [73, 0.035, 6.77, 0.084], [74, 0.038, 6.9, 0.084], 
+            [75, 0.041, 7.03, 0.083], [76, 0.044, 7.16, 0.083], [77, 0.047, 7.29, 0.083], [78, 0.049, 7.42, 0.083], [79, 0.051, 7.55, 0.083], 
+            [80, 0.053, 7.68, 0.083], [81, 0.055, 7.81, 0.083], [82, 0.056, 7.94, 0.083], [83, 0.057, 8.07, 0.083], [84, 0.057, 8.2, 0.083], 
+            [85, 0.057, 8.33, 0.084], [86, 0.056, 8.46, 0.084], [87, 0.055, 8.59, 0.084], [88, 0.053, 8.72, 0.084], [89, 0.051, 8.85, 0.084], 
+            [90, 0.048, 8.98, 0.084], [91, 0.045, 9.11, 0.085], [92, 0.042, 9.24, 0.085], [93, 0.038, 9.37, 0.085], [94, 0.034, 9.5, 0.085], 
+            [95, 0.029, 9.63, 0.086], [96, 0.024, 9.76, 0.086], [97, 0.019, 9.89, 0.086], [98, 0.013, 10.02, 0.086], [99, 0.007, 10.15, 0.087], 
+            [100, 0.001, 10.28, 0.087], [101, -0.006, 10.41, 0.087], [102, -0.013, 10.54, 0.088], [103, -0.02, 10.67, 0.088], [104, -0.028, 10.8, 0.088], 
+            [105, -0.035, 10.93, 0.088], [106, -0.043, 11.06, 0.089], [107, -0.051, 11.19, 0.089], [108, -0.059, 11.32, 0.089], [109, -0.067, 11.45, 0.089], 
+            [110, -0.076, 11.58, 0.09]
+        ];
+        
+        // TB/U - Laki-laki (HFA Male 0-60m)
+        const HFA_M_LMS_0_60 = [
+            [0, 0.141, 49.988, 0.038], [1, 0.167, 54.729, 0.035], [2, 0.167, 58.423, 0.034], [3, 0.153, 61.353, 0.033], [4, 0.134, 63.673, 0.033], 
+            [5, 0.114, 65.52, 0.033], [6, 0.095, 67.016, 0.033], [7, 0.076, 68.257, 0.033], [8, 0.059, 69.309, 0.034], [9, 0.043, 70.217, 0.034], 
+            [10, 0.029, 71.018, 0.034], [11, 0.016, 71.734, 0.035], [12, 0.005, 72.385, 0.035], [13, -0.004, 72.984, 0.035], [14, -0.013, 73.541, 0.036], 
+            [15, -0.02, 74.062, 0.036], [16, -0.027, 74.551, 0.036], [17, -0.032, 75.013, 0.037], [18, -0.037, 75.452, 0.037], [19, -0.041, 75.871, 0.037], 
+            [20, -0.044, 76.273, 0.038], [21, -0.046, 76.66, 0.038], [22, -0.047, 77.034, 0.038], [23, -0.048, 77.397, 0.038], [24, -0.047, 77.75, 0.039], 
+            [25, -0.047, 78.094, 0.039], [26, -0.045, 78.43, 0.039], [27, -0.043, 78.759, 0.039], [28, -0.04, 79.081, 0.039], [29, -0.037, 79.398, 0.039], 
+            [30, -0.033, 79.709, 0.039], [31, -0.028, 80.015, 0.04], [32, -0.024, 80.316, 0.04], [33, -0.019, 80.613, 0.04], [34, -0.014, 80.906, 0.04], 
+            [35, -0.009, 81.194, 0.04], [36, -0.004, 81.478, 0.04], [37, 0.001, 81.758, 0.04], [38, 0.006, 82.035, 0.04], [39, 0.01, 82.308, 0.04], 
+            [40, 0.014, 82.578, 0.04], [41, 0.018, 82.845, 0.04], [42, 0.021, 83.109, 0.04], [43, 0.024, 83.37, 0.04], [44, 0.026, 83.628, 0.04], 
+            [45, 0.027, 83.883, 0.04], [46, 0.029, 84.135, 0.04], [47, 0.03, 84.385, 0.04], [48, 0.03, 84.632, 0.04], [49, 0.03, 84.876, 0.04], 
+            [50, 0.029, 85.118, 0.04], [51, 0.028, 85.358, 0.04], [52, 0.027, 85.595, 0.04], [53, 0.025, 85.83, 0.04], [54, 0.023, 86.063, 0.04], 
+            [55, 0.02, 86.293, 0.04], [56, 0.017, 86.522, 0.04], [57, 0.014, 86.748, 0.04], [58, 0.01, 86.972, 0.04], [59, 0.006, 87.195, 0.04], 
+            [60, 0.002, 87.416, 0.04]
+        ];
+
+        // TB/U - Perempuan (HFA Female 0-60m)
+        const HFA_F_LMS_0_60 = [
+            [0, 0.021, 49.255, 0.04], [1, 0.082, 53.681, 0.036], [2, 0.106, 57.112, 0.034], [3, 0.108, 59.789, 0.033], [4, 0.101, 61.884, 0.033], 
+            [5, 0.09, 63.565, 0.033], [6, 0.076, 64.957, 0.033], [7, 0.061, 66.143, 0.034], [8, 0.045, 67.172, 0.034], [9, 0.03, 68.083, 0.034], 
+            [10, 0.016, 68.9, 0.035], [11, 0.003, 69.643, 0.035], [12, -0.009, 70.325, 0.036], [13, -0.02, 70.957, 0.036], [14, -0.03, 71.547, 0.036], 
+            [15, -0.039, 72.102, 0.037], [16, -0.046, 72.627, 0.037], [17, -0.053, 73.125, 0.037], [18, -0.058, 73.6, 0.038], [19, -0.062, 74.053, 0.038], 
+            [20, -0.066, 74.486, 0.038], [21, -0.068, 74.901, 0.039], [22, -0.069, 75.3, 0.039], [23, -0.07, 75.684, 0.039], [24, -0.07, 76.054, 0.039], 
+            [25, -0.069, 76.411, 0.039], [26, -0.068, 76.756, 0.039], [27, -0.066, 77.09, 0.04], [28, -0.064, 77.414, 0.04], [29, -0.061, 77.728, 0.04], 
+            [30, -0.058, 78.034, 0.04], [31, -0.054, 78.331, 0.04], [32, -0.05, 78.62, 0.04], [33, -0.045, 78.902, 0.04], [34, -0.04, 79.177, 0.04], 
+            [35, -0.035, 79.445, 0.04], [36, -0.03, 79.707, 0.04], [37, -0.024, 79.963, 0.04], [38, -0.018, 80.213, 0.04], [39, -0.013, 80.458, 0.04], 
+            [40, -0.007, 80.697, 0.04], [41, -0.001, 80.932, 0.04], [42, 0.004, 81.162, 0.04], [43, 0.009, 81.387, 0.04], [44, 0.014, 81.608, 0.04], 
+            [45, 0.018, 81.825, 0.04], [46, 0.022, 82.038, 0.04], [47, 0.026, 82.247, 0.04], [48, 0.029, 82.453, 0.04], [49, 0.031, 82.655, 0.04], 
+            [50, 0.033, 82.854, 0.04], [51, 0.034, 83.05, 0.04], [52, 0.035, 83.243, 0.04], [53, 0.035, 83.433, 0.04], [54, 0.035, 83.621, 0.04], 
+            [55, 0.034, 83.805, 0.04], [56, 0.033, 83.987, 0.04], [57, 0.031, 84.167, 0.04], [58, 0.029, 84.344, 0.04], [59, 0.026, 84.519, 0.04], 
+            [60, 0.023, 84.692, 0.04]
+        ];
+
+        // IMT/U - Laki-laki (BFA Male 0-60m)
+        const BFA_M_LMS_0_60 = [
+            [0, 1.157, 13.523, 0.109], [1, 0.825, 15.109, 0.103], [2, 0.612, 16.216, 0.099], [3, 0.443, 16.947, 0.096], [4, 0.315, 17.38, 0.093], 
+            [5, 0.22, 17.584, 0.091], [6, 0.149, 17.61, 0.089], [7, 0.094, 17.5, 0.087], [8, 0.051, 17.291, 0.086], [9, 0.017, 17.022, 0.085], 
+            [10, -0.008, 16.717, 0.084], [11, -0.027, 16.393, 0.083], [12, -0.042, 16.064, 0.083], [13, -0.055, 15.741, 0.082], [14, -0.067, 15.433, 0.082], 
+            [15, -0.078, 15.143, 0.082], [16, -0.088, 14.872, 0.082], [17, -0.098, 14.62, 0.082], [18, -0.108, 14.385, 0.082], [19, -0.117, 14.167, 0.082], 
+            [20, -0.126, 13.965, 0.083], [21, -0.134, 13.777, 0.083], [22, -0.142, 13.601, 0.083], [23, -0.149, 13.438, 0.083], [24, -0.156, 13.284, 0.084], 
+            [25, -0.162, 13.14, 0.084], [26, -0.168, 13.004, 0.084], [27, -0.174, 12.875, 0.084], [28, -0.179, 12.753, 0.085], [29, -0.183, 12.637, 0.085], 
+            [30, -0.187, 12.527, 0.085], [31, -0.19, 12.423, 0.086], [32, -0.193, 12.323, 0.086], [33, -0.195, 12.228, 0.086], [34, -0.196, 12.138, 0.086], 
+            [35, -0.196, 12.053, 0.087], [36, -0.195, 11.972, 0.087], [37, -0.194, 11.895, 0.087], [38, -0.191, 11.822, 0.087], [39, -0.187, 11.753, 0.087], 
+            [40, -0.182, 11.687, 0.088], [41, -0.177, 11.625, 0.088], [42, -0.17, 11.566, 0.088], [43, -0.163, 11.511, 0.088], [44, -0.155, 11.458, 0.088], 
+            [45, -0.146, 11.409, 0.088], [46, -0.137, 11.363, 0.089], [47, -0.127, 11.319, 0.089], [48, -0.116, 11.278, 0.089], [49, -0.104, 11.24, 0.089], 
+            [50, -0.092, 11.204, 0.089], [51, -0.079, 11.171, 0.09], [52, -0.065, 11.141, 0.09], [53, -0.05, 11.113, 0.09], [54, -0.035, 11.087, 0.09], 
+            [55, -0.019, 11.064, 0.091], [56, -0.003, 11.042, 0.091], [57, 0.013, 11.023, 0.091], [58, 0.03, 11.006, 0.091], [59, 0.047, 10.991, 0.092], 
+            [60, 0.064, 10.978, 0.092]
+        ];
+
+        // IMT/U - Perempuan (BFA Female 0-60m)
+        const BFA_F_LMS_0_60 = [
+            [0, 0.959, 13.069, 0.111], [1, 0.655, 14.394, 0.105], [2, 0.457, 15.353, 0.101], [3, 0.313, 15.992, 0.098], [4, 0.207, 16.368, 0.096], 
+            [5, 0.129, 16.54, 0.094], [6, 0.071, 16.559, 0.092], [7, 0.026, 16.467, 0.091], [8, -0.007, 16.299, 0.089], [9, -0.034, 16.082, 0.088], 
+            [10, -0.054, 15.836, 0.087], [11, -0.07, 15.577, 0.086], [12, -0.083, 15.316, 0.085], [13, -0.093, 15.061, 0.084], [14, -0.102, 14.814, 0.084], 
+            [15, -0.109, 14.577, 0.083], [16, -0.115, 14.35, 0.083], [17, -0.12, 14.131, 0.082], [18, -0.124, 13.92, 0.082], [19, -0.128, 13.717, 0.082], 
+            [20, -0.13, 13.521, 0.082], [21, -0.132, 13.332, 0.082], [22, -0.133, 13.15, 0.082], [23, -0.133, 12.975, 0.082], [24, -0.133, 12.805, 0.082], 
+            [25, -0.133, 12.641, 0.082], [26, -0.131, 12.483, 0.082], [27, -0.13, 12.33, 0.083], [28, -0.127, 12.181, 0.083], [29, -0.124, 12.037, 0.083], 
+            [30, -0.12, 11.898, 0.083], [31, -0.116, 11.763, 0.084], [32, -0.111, 11.632, 0.084], [33, -0.105, 11.505, 0.084], [34, -0.098, 11.382, 0.084], 
+            [35, -0.09, 11.264, 0.085], [36, -0.082, 11.149, 0.085], [37, -0.073, 11.038, 0.085], [38, -0.063, 10.931, 0.085], [39, -0.053, 10.827, 0.086], 
+            [40, -0.042, 10.727, 0.086], [41, -0.031, 10.63, 0.086], [42, -0.019, 10.537, 0.086], [43, -0.007, 10.447, 0.087], [44, 0.006, 10.36, 0.087], 
+            [45, 0.018, 10.276, 0.087], [46, 0.03, 10.195, 0.087], [47, 0.043, 10.117, 0.087], [48, 0.056, 10.042, 0.088], [49, 0.07, 9.97, 0.088], 
+            [50, 0.084, 9.9, 0.088], [51, 0.098, 9.833, 0.088], [52, 0.113, 9.769, 0.089], [53, 0.129, 9.708, 0.089], [54, 0.145, 9.649, 0.089], 
+            [55, 0.162, 9.593, 0.089], [56, 0.18, 9.539, 0.09], [57, 0.198, 9.488, 0.09], [58, 0.217, 9.439, 0.09], [59, 0.237, 9.393, 0.09], 
+            [60, 0.258, 9.349, 0.091]
+        ];
+
+        // --- DATA WHO 5-19 TAHUN (WHO REFERENCE 5-19 YEARS) ---
+        
+        // HFA Male 60-228m Anchors (Points from WHO Reference 5-19 years table)
+        const HFA_M_ANCHORS = [
+            [60, 0.002, 87.416, 0.04], 
+            [66, 0.0, 90.62, 0.039], [72, 0.0, 93.43, 0.039], [84, 0.0, 98.37, 0.039], [96, 0.0, 103.11, 0.0385],
+            [108, 0.0, 107.56, 0.038], [120, 0.0, 111.45, 0.038], [132, 0.0, 115.35, 0.0375], [144, 0.0, 120.3, 0.0375],
+            [156, 0.0, 128.5, 0.037], [168, 0.0, 140.0, 0.037], [180, 0.0, 153.2, 0.0368], [192, 0.0, 163.5, 0.0367],
+            [204, 0.0, 170.8, 0.0366], [216, 0.0, 174.9, 0.0366], [228, 0.0, 176.80, 0.0366] 
+        ];
+        const HFA_M_EXT_5_19 = interpolateLMS(HFA_M_ANCHORS).filter(row => row[0] > 60);
+        // TB/U - Laki-laki (0-228m) 
+        let HFA_M_LMS_EXT = HFA_M_LMS_0_60.filter(row => row[0] <= 60).concat(HFA_M_EXT_5_19);
+
+        // HFA Female 60-228m Anchors
+        const HFA_F_ANCHORS = [
+            [60, 0.023, 84.692, 0.04], 
+            [66, 0.0, 87.6, 0.039], [72, 0.0, 90.17, 0.039], [84, 0.0, 95.0, 0.039], [96, 0.0, 99.8, 0.0385],
+            [108, 0.0, 104.5, 0.038], [120, 0.0, 108.8, 0.038], [132, 0.0, 113.1, 0.0375], [144, 0.0, 117.3, 0.0375],
+            [156, 0.0, 120.8, 0.037], [168, 0.0, 123.5, 0.037], [180, 0.0, 124.9, 0.037], [192, 0.0, 126.3, 0.037],
+            [204, 0.0, 128.0, 0.0375], [216, 0.0, 131.0, 0.0375], [228, 0.0, 163.64, 0.0375] // Using ~163.64cm as max adult height reference
+        ];
+        const HFA_F_EXT_5_19 = interpolateLMS(HFA_F_ANCHORS).filter(row => row[0] > 60);
+        // TB/U - Perempuan (0-228m) 
+        let HFA_F_LMS_EXT = HFA_F_LMS_0_60.filter(row => row[0] <= 60).concat(HFA_F_EXT_5_19);
+
+
+        // BFA Male 60-228m Anchors (Points from WHO Reference 5-19 years table)
+        const BFA_M_ANCHORS = [
+            [60, 0.064, 10.978, 0.092], 
+            [66, 0.09, 11.23, 0.09], [72, 0.12, 11.5, 0.089], [84, 0.18, 12.06, 0.086], [96, 0.23, 12.63, 0.084],
+            [108, 0.27, 13.15, 0.082], [120, 0.3, 13.51, 0.081], [132, 0.35, 14.2, 0.08], [144, 0.45, 15.2, 0.08],
+            [156, 0.55, 16.5, 0.085], [168, 0.65, 17.8, 0.09], [180, 0.8, 19.1, 0.095], [192, 0.9, 20.2, 0.1],
+            [204, 0.95, 21.0, 0.101], [216, 0.96, 21.4, 0.102], [228, 0.97, 21.60, 0.102] 
+        ];
+        const BFA_M_EXT_5_19 = interpolateLMS(BFA_M_ANCHORS).filter(row => row[0] > 60);
+        // IMT/U - Laki-laki (0-228m) 
+        let BFA_M_LMS_EXT = BFA_M_LMS_0_60.filter(row => row[0] <= 60).concat(BFA_M_EXT_5_19);
+
+        // BFA Female 60-228m Anchors
+        const BFA_F_ANCHORS = [
+            [60, 0.258, 9.349, 0.091], 
+            [66, 0.28, 9.6, 0.089], [72, 0.31, 9.9, 0.088], [84, 0.37, 10.6, 0.085], [96, 0.45, 11.5, 0.08],
+            [108, 0.52, 12.5, 0.075], [120, 0.6, 13.8, 0.07], [132, 0.65, 15.0, 0.075], [144, 0.7, 16.5, 0.08],
+            [156, 0.75, 18.0, 0.085], [168, 0.8, 19.5, 0.09], [180, 0.9, 20.8, 0.10], [192, 0.93, 21.2, 0.105],
+            [204, 0.95, 21.4, 0.11], [216, 0.96, 21.5, 0.11], [228, 0.97, 21.57, 0.111] 
+        ];
+        const BFA_F_EXT_5_19 = interpolateLMS(BFA_F_ANCHORS).filter(row => row[0] > 60);
+        // IMT/U - Perempuan (0-228m) 
+        let BFA_F_LMS_EXT = BFA_F_LMS_0_60.filter(row => row[0] <= 60).concat(BFA_F_EXT_5_19);
+
+
+        // Struktur data untuk memetakan indeks ke tabel LMS
+        const LMS_DATA = {
+            'male': { 
+                WFA: { data: WFA_M_LMS, keyType: 'age', unit: 'kg', label: 'Berat Badan per Usia (BB/U)', range: '0-60 Bulan' },
+                HFA: { data: HFA_M_LMS_EXT, keyType: 'age', unit: 'cm', label: 'Tinggi Badan per Usia (TB/U)', range: '0-228 Bulan' },    
+                WFL: { data: WFL_M_LMS, keyType: 'height', unit: 'kg', label: 'Berat Badan per Tinggi Badan (BB/TB)', range: '45-110 cm' },
+                BFA: { data: BFA_M_LMS_EXT, keyType: 'age', unit: 'IMT', label: 'IMT per Usia (IMT/U)', range: '0-228 Bulan' }              
+            },
+            'female': {
+                WFA: { data: WFA_F_LMS, keyType: 'age', unit: 'kg', label: 'Berat Badan per Usia (BB/U)', range: '0-60 Bulan' },
+                HFA: { data: HFA_F_LMS_EXT, keyType: 'age', unit: 'cm', label: 'Tinggi Badan per Usia (TB/U)', range: '0-228 Bulan' },
+                WFL: { data: WFL_F_LMS, keyType: 'height', unit: 'kg', label: 'Berat Badan per Tinggi Badan (BB/TB)', range: '45-110 cm' },
+                BFA: { data: BFA_F_LMS_EXT, keyType: 'age', unit: 'IMT', label: 'IMT per Usia (IMT/U)', range: '0-228 Bulan' }
+            }
+        };
+
+        // --- FUNGSI KALKULASI USIA ---
+        
+        function dateToISO(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+        
+        function formatDateID(date) {
+             return date.toLocaleDateString('id-ID', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        /** Usia desimal untuk LMS lookup (Presisi WHO: 30.4375 hari/bulan) */
+        function getDecimalAgeInMonths(dobString) {
+            const today = new Date();
+            const birthDate = new Date(dobString);
+            if (isNaN(birthDate.getTime()) || birthDate > today) return null;
+            const diffTime = today.getTime() - birthDate.getTime();
+            const diffDays = diffTime / (1000 * 60 * 60 * 24);
+            const averageDaysInMonth = 30.4375; 
+            return diffDays / averageDaysInMonth;
+        }
+        
+        /** Usia kalender untuk tampilan (Bulan dan Hari) */
+        function getCalendarAgeDisplay(dobString) {
+            const today = new Date();
+            const birthDate = new Date(dobString);
+            if (isNaN(birthDate.getTime()) || birthDate > today) return null;
+
+            let years = today.getFullYear() - birthDate.getFullYear();
+            let months = today.getMonth() - birthDate.getMonth();
+            let days = today.getDate() - birthDate.getDate();
+
+            if (days < 0) {
+                months--;
+                days += new Date(today.getFullYear(), today.getMonth(), 0).getDate(); 
+            }
+
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+            
+            const totalMonths = years * 12 + months;
+            const remainingDays = days;
+            
+            return { totalMonths, remainingDays };
+        }
+
+
+        // --- FUNGSI UTILITY Z-SCORE ---
+
+        /** Mengambil nilai L, M, S dari data tabel. */
+        function getLMSValues(sex, index, age, height) {
+            const indexData = LMS_DATA[sex][index];
+            const dataTable = indexData.data;
+            const keyType = indexData.keyType;
+
+            let lookupKey;
+            
+            if (keyType === 'age') {
+                lookupKey = Math.floor(age); 
+                // Batas 228 bulan (19 tahun)
+                if (lookupKey > MAX_AGE_MONTHS) return null; 
+            } else if (keyType === 'height') {
+                lookupKey = Math.round(height); 
+                // WFL hanya berlaku 45-110cm
+                if (lookupKey < 45 || lookupKey > 110) return null; 
+            } else {
+                return null;
+            }
+
+            const lmsRow = dataTable.find(row => row[0] === lookupKey);
+            return lmsRow ? { L: lmsRow[1], M: lmsRow[2], S: lmsRow[3] } : null;
+        }
+
+        /** Menghitung Z-score menggunakan Formula LMS WHO. */
+        function calculateLMSZScore(X, L, M, S) {
+            if (S === 0) return 0; // Avoid division by zero
+            if (L === 0) {
+                return Math.log(X / M) / S;
+            } else {
+                return (Math.pow(X / M, L) - 1) / (L * S);
+            }
+        }
+
+        /** Mengembalikan klasifikasi WHO dan kelas warna berdasarkan Z-score. */
+        function classifyStatus(zScore, index) {
+            let status = 'Di luar Batas Normal';
+            let colorClass = 'bg-gray-400';
+            
+            if (index === 'HFA' || index === 'WFA') { 
+                if (zScore < -3) {
+                    status = index === 'HFA' ? 'Sangat Pendek (Severe Stunting)' : 'Gizi Buruk (Severely Underweight)';
+                    colorClass = 'bg-danger'; 
+                } else if (zScore >= -3 && zScore < -2) {
+                    status = index === 'HFA' ? 'Pendek (Stunting)' : 'Gizi Kurang (Underweight)';
+                    colorClass = 'bg-warning'; 
+                } else if (zScore >= -2 && zScore <= 2) {
+                    status = 'Gizi Baik (Normal)';
+                    colorClass = 'bg-success'; 
+                } else { 
+                    status = 'Tinggi/Berisiko Tinggi (Possible Risk)';
+                    colorClass = 'bg-info'; 
+                }
+            } 
+            else if (index === 'WFL' || index === 'BFA') { 
+                if (zScore < -3) {
+                    status = 'Gizi Sangat Kurus (Severe Wasting)';
+                    colorClass = 'bg-danger';
+                } else if (zScore >= -3 && zScore < -2) {
+                    status = 'Gizi Kurus (Wasting)';
+                    colorClass = 'bg-warning';
+                } else if (zScore >= -2 && zScore <= 1) { 
+                    status = 'Gizi Baik (Normal)';
+                    colorClass = 'bg-success';
+                } else if (zScore > 1 && zScore <= 2) { 
+                    status = 'Risiko Gizi Lebih (Possible Risk)';
+                    colorClass = 'bg-info';
+                } else if (zScore > 2 && zScore <= 3) { 
+                    status = 'Gizi Lebih (Overweight)';
+                    colorClass = 'bg-info';
+                } else { 
+                    status = 'Obesitas (Obese)';
+                    colorClass = 'bg-danger'; 
+                }
+            }
+            return { status, colorClass };
+        }
+        
+        // --- FUNGSI VISUALISASI CANVAS ---
+
+        let currentZScoreResults = {}; // Store all results for visualization update
+
+        function drawZScoreVisualization(index) {
+            const canvas = document.getElementById('zscore-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Atur ukuran canvas agar sesuai dengan container (untuk responsivitas)
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.parentNode.getBoundingClientRect();
+            const width = rect.width;
+            const height = 300;
+
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+
+            const zScoreData = currentZScoreResults[index];
+            const zScore = zScoreData ? parseFloat(zScoreData.zScore) : NaN;
+            const status = zScoreData ? zScoreData.status : 'N/A';
+            const color = zScoreData ? zScoreData.colorClass.replace('bg-', '#') : '#9ca3af';
+
+            const padding = 20;
+            const plotArea = {
+                x: padding, 
+                y: padding, 
+                width: width - 2 * padding, 
+                height: height - 2 * padding
+            };
+            
+            // Rentang Z-score yang ditampilkan (Biasanya -4 SD hingga +4 SD)
+            const minZ = -4.0;
+            const maxZ = 4.0;
+            const zRange = maxZ - minZ;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // 1. Gambar Garis SD dan Zona Warna
+            const sdLines = [-3, -2, -1, 0, 1, 2, 3];
+            const zToY = (z) => plotArea.y + plotArea.height - ((z - minZ) / zRange) * plotArea.height;
+
+            ctx.font = '10px Inter';
+            ctx.textAlign = 'right';
+
+            sdLines.forEach(sd => {
+                const y = zToY(sd);
+                
+                // Teks SD
+                ctx.fillStyle = (sd === 0) ? '#059669' : '#4b5563';
+                ctx.fillText(`${sd} SD`, plotArea.x - 5, y + 3);
+
+                // Garis
+                ctx.beginPath();
+                ctx.moveTo(plotArea.x, y);
+                ctx.lineTo(plotArea.x + plotArea.width, y);
+                ctx.lineWidth = (sd === 0) ? 2 : 1;
+                ctx.strokeStyle = (sd === 0) ? '#059669' : '#9ca3af';
+                ctx.stroke();
+            });
+            
+            // 2. Plot Titik Hasil Z-score
+            if (!isNaN(zScore) && zScore >= minZ && zScore <= maxZ) {
+                const yPos = zToY(zScore);
+                const xPos = plotArea.x + plotArea.width / 2; // Titik di tengah
+                
+                // Titik
+                ctx.beginPath();
+                ctx.arc(xPos, yPos, 8, 0, 2 * Math.PI);
+                ctx.fillStyle = color;
+                ctx.fill();
+                
+                // Border/Garis Luar
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // 3. Tampilkan Nilai Z-score dan Status
+                document.getElementById('zscore-label').textContent = `${zScore.toFixed(2)} SD (${status})`;
+                
+                ctx.textAlign = 'left';
+                ctx.fillStyle = '#1f2937';
+                ctx.font = '14px Inter bold';
+                ctx.fillText(`Hasil: ${zScore.toFixed(2)} SD`, plotArea.x + plotArea.width / 2 + 15, yPos + 5);
+
+            } else {
+                document.getElementById('zscore-label').textContent = 'Z-score: N/A (Data di luar batas kurva)';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#6b7280';
+                ctx.font = '16px Inter bold';
+                ctx.fillText('Data di luar batas atau tidak valid', width / 2, height / 2);
+            }
+        }
+        
+        /** Mengambil hasil z-score yang sudah ada dan memperbarui visualisasi. */
+        window.updateVisualization = function() {
+            const index = document.getElementById('visualization-index').value;
+            drawZScoreVisualization(index);
+        }
+
+        // --- FUNGSI UTAMA ---
+
+        /** Fungsi utama untuk menghitung semua indeks dan memperbarui tampilan. */
+        window.calculateNutritionStatus = function() {
+            const today = new Date();
+            const dobInput = document.getElementById('dob').value;
+            const sex = document.getElementById('sex').value;
+            const weightInput = document.getElementById('weight').value;
+            const heightInput = document.getElementById('height').value;
+            
+            const ageDisplay = document.getElementById('age-display');
+            const messageBox = document.getElementById('message-box');
+            const resultsGrid = document.getElementById('results-grid');
+
+            // 1. Tampilkan Tanggal Sekarang
+            document.getElementById('current-date-display').textContent = formatDateID(today);
+
+            // Reset UI
+            resultsGrid.innerHTML = '';
+            ageDisplay.textContent = 'Menunggu input...';
+            
+            const weight = parseFloat(weightInput);
+            const height = parseFloat(heightInput);
+
+            // 2. Validasi Input Dasar
+            if (!dobInput || isNaN(weight) || isNaN(height) || weight <= 0 || height <= 0) {
+                // Jangan reset message-box jika pesan datang dari Firebase
+                if (!messageBox.innerHTML.includes("Gagal")) {
+                    messageBox.innerHTML = 'Mohon masukkan Tanggal Lahir, Berat Badan (kg), dan Tinggi Badan (cm) yang valid.';
+                    messageBox.className = 'p-2 text-xs text-red-800 bg-red-100 border-l-4 border-danger rounded-lg';
+                }
+                drawZScoreVisualization('WFA'); // Gambar ulang canvas kosong
+                return;
+            }
+
+            // 3. Hitung Usia
+            const ageDecimal = getDecimalAgeInMonths(dobInput);
+            const ageDisplayData = getCalendarAgeDisplay(dobInput);
+            const age = ageDecimal; // Gunakan ageDecimal untuk lookup LMS
+
+            if (age === null || age < 0 || ageDisplayData === null) {
+                 messageBox.innerHTML = 'Tanggal Lahir tidak valid atau melebihi Tanggal Sekarang.';
+                 messageBox.className = 'p-2 text-xs text-red-800 bg-red-100 border-l-4 border-danger rounded-lg';
+                 ageDisplay.textContent = 'Tidak Valid';
+                 drawZScoreVisualization('WFA');
+                 return;
+            }
+
+            // 4. Tampilkan Usia Terhitung dalam format bulan dan hari
+            ageDisplay.textContent = `${ageDisplayData.totalMonths} bulan ${ageDisplayData.remainingDays} hari`;
+            
+            let generalMessage = 'Perhitungan WHO 0-60 bulan (akurat, Child Growth Standards). 61-228 bulan (akurat, WHO Reference 5-19 years).';
+            messageBox.className = 'p-2 text-xs text-green-800 bg-green-100 border-l-4 border-success rounded-lg';
+            
+            if (age > 60) {
+                 generalMessage = `Usia (${ageDecimal.toFixed(1)} bulan) di atas 60 bulan. BB/U dan BB/TB dinonaktifkan. TB/U dan IMT/U menggunakan data WHO Reference 5-19 tahun yang akurat.`;
+                 messageBox.className = 'p-2 text-xs text-info bg-blue-100 border-l-4 border-info rounded-lg';
+            } else if (age > MAX_AGE_MONTHS) {
+                 generalMessage = `Peringatan Keras: Usia (${ageDecimal.toFixed(1)} bulan) di luar batas perhitungan (228 bulan). Hasil tidak dapat diandalkan.`;
+                 messageBox.className = 'p-2 text-xs text-red-800 bg-red-100 border-l-4 border-danger rounded-lg';
+            }
+            
+            // Peringatan WFL 45-110cm
+            if (height < 45 || height > 110) {
+                 if (age <= 60) { // WFL is calculated only if age <= 60
+                    generalMessage += ` Peringatan: Tinggi Badan (${height} cm) di luar rentang 45-110 cm untuk indeks BB/TB.`;
+                    messageBox.className = 'p-2 text-xs text-orange-800 bg-orange-100 border-l-4 border-warning rounded-lg';
+                 }
+            }
+            
+            messageBox.innerHTML = generalMessage;
+
+
+            // Hitung IMT (Indeks Massa Tubuh)
+            const heightInMeters = height / 100;
+            const bmi = weight / (heightInMeters * heightInMeters);
+
+            const indicesToCalculate = ['WFA', 'HFA', 'WFL', 'BFA'];
+            const results = [];
+            currentZScoreResults = {}; // Reset visualisasi data
+
+            for (const index of indicesToCalculate) {
+                const refData = LMS_DATA[sex][index];
+                
+                // Non-aktifkan WFA dan WFL jika usia > 60 bulan
+                if ((index === 'WFA' || index === 'WFL') && age > 60) {
+                    const unavailableResult = {
+                        title: refData.label,
+                        zScore: 'N/A',
+                        status: 'Tidak Berlaku (>60 Bulan)',
+                        colorClass: 'bg-gray-400',
+                    };
+                    results.push(unavailableResult);
+                    currentZScoreResults[index] = unavailableResult;
+                    continue;
+                }
+
+                let observedValue;
+                if (index === 'WFA') { observedValue = weight; }
+                else if (index === 'HFA') { observedValue = height; }
+                else if (index === 'WFL') { observedValue = weight; }
+                else if (index === 'BFA') { observedValue = bmi; }
+                
+                const lms = getLMSValues(sex, index, age, height);
+
+                if (!lms) {
+                    const invalidResult = {
+                        title: refData.label,
+                        zScore: 'N/A',
+                        status: `${refData.keyType === 'age' ? 'Usia' : 'Tinggi/Panjang Badan'} di luar rentang WHO (${refData.range})`,
+                        colorClass: 'bg-gray-400',
+                    };
+                    results.push(invalidResult);
+                    currentZScoreResults[index] = invalidResult;
+                    continue;
+                }
+
+                const zScore = calculateLMSZScore(observedValue, lms.L, lms.M, lms.S);
+                const classification = classifyStatus(zScore, index);
+
+                const result = {
+                    title: refData.label,
+                    zScore: zScore.toFixed(2),
+                    status: classification.status,
+                    colorClass: classification.colorClass,
+                };
+                results.push(result);
+                    currentZScoreResults[index] = result; // Simpan untuk visualisasi
+            }
+
+            // Render Hasil ke UI
+            resultsGrid.innerHTML = results.map(result => `
+                <div class="p-2 rounded-xl shadow-lg border border-gray-200">
+                    <h3 class="text-sm font-bold text-secondary mb-1">${result.title.replace('per Usia', '/U').replace('per Tinggi Badan', '/TB')}</h3>
+                    
+                    <!-- Z-score -->
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-medium text-gray-600">Z-score</span>
+                        <span class="font-extrabold text-base text-primary">${result.zScore} SD</span>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="p-1 text-white text-center rounded-lg ${result.colorClass}">
+                        <p class="font-bold text-xs">${result.status.split('(')[0].trim()}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            // Perbarui Visualisasi setelah hasil dihitung
+            updateVisualization();
+        }
+
+        /** Inisialisasi: Mengatur tanggal hari ini dan tanggal lahir default (2 tahun lalu) */
+        function initializeApp() {
+            const today = new Date();
+            const defaultDOB = new Date();
+            
+            // Set tanggal lahir default ke 2 tahun (24 bulan) yang lalu
+            defaultDOB.setFullYear(today.getFullYear() - 2); 
+            
+            document.getElementById('dob').value = dateToISO(defaultDOB);
+
+            // Jalankan perhitungan awal. Firebase loadProfiles akan dipanggil setelah auth siap.
+            calculateNutritionStatus();
+        }
+
+        // Jalankan inisialisasi saat DOM dimuat
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+    </script>
+</body>
+</html>
