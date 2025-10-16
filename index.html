@@ -134,13 +134,6 @@
                     </div>
                 </div>
 
-                <!-- Tanggal Lahir -->
-                <div class="space-y-0.5">
-                    <label for="dob" class="block text-xs font-medium text-gray-700">Tanggal Lahir</label>
-                    <input type="date" id="dob" oninput="calculateNutritionStatus()" 
-                           class="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
-                </div>
-
                 <!-- Usia (Otomatis) -->
                 <div class="space-y-0.5">
                     <label for="age-display" class="block text-xs font-medium text-gray-700">Usia Terhitung</label>
@@ -150,30 +143,40 @@
                     </div>
                 </div>
                 
-                <!-- Jenis Kelamin -->
-                <div class="space-y-0.5">
-                    <label for="sex" class="block text-xs font-medium text-gray-700">Jenis Kelamin</label>
-                    <select id="sex" oninput="calculateNutritionStatus()" 
-                            class="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
-                        <option value="male">Laki-laki</option>
-                        <option value="female">Perempuan</option>
-                    </select>
-                </div>
+                <!-- COMPACT INPUTS (TTL, JK, BB, TB/PB) - 2x2 Grid for Mobile -->
+                <div class="grid grid-cols-2 gap-2">
+                    <!-- Tanggal Lahir (TTL) -->
+                    <div class="space-y-0.5">
+                        <label for="dob" class="block text-xs font-medium text-gray-700">TTL</label>
+                        <input type="date" id="dob" oninput="calculateNutritionStatus()" 
+                               class="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                    </div>
+                    
+                    <!-- Jenis Kelamin (JK) -->
+                    <div class="space-y-0.5">
+                        <label for="sex" class="block text-xs font-medium text-gray-700">JK</label>
+                        <select id="sex" oninput="calculateNutritionStatus()" 
+                                class="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                            <option value="male">Laki-laki</option>
+                            <option value="female">Perempuan</option>
+                        </select>
+                    </div>
 
-                <!-- Berat Badan (kg) -->
-                <div class="space-y-0.5">
-                    <label for="weight" class="block text-xs font-medium text-gray-700">Berat Badan (kg)</label>
-                    <input type="number" id="weight" value="13.0" step="0.1" min="0" oninput="calculateNutritionStatus()" 
-                           placeholder="13.0" 
-                           class="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
-                </div>
+                    <!-- Berat Badan (BB kg) -->
+                    <div class="space-y-0.5">
+                        <label for="weight" class="block text-xs font-medium text-gray-700">BB (kg)</label>
+                        <input type="number" id="weight" value="13.0" step="0.1" min="0" oninput="calculateNutritionStatus()" 
+                               placeholder="13.0" 
+                               class="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                    </div>
 
-                <!-- Tinggi Badan (cm) -->
-                <div class="space-y-0.5">
-                    <label for="height" class="block text-xs font-medium text-gray-700">TB/PB (cm)</label>
-                    <input type="number" id="height" value="90.0" step="0.1" min="0" oninput="calculateNutritionStatus()" 
-                           placeholder="90.0" 
-                           class="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                    <!-- Tinggi Badan (TB/PB cm) -->
+                    <div class="space-y-0.5">
+                        <label for="height" class="block text-xs font-medium text-gray-700">TB/PB (cm)</label>
+                        <input type="number" id="height" value="90.0" step="0.1" min="0" oninput="calculateNutritionStatus()" 
+                               placeholder="90.0" 
+                               class="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                    </div>
                 </div>
             </div>
 
