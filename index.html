@@ -138,11 +138,12 @@
                 <!-- Grid Input Rapat (TTL, JK, BB, TB/PB) -->
                 <div class="grid grid-cols-2 gap-2 compact-input-group">
 
-                    <!-- Tanggal Lahir (TTL) - TYPE DIGANTI JADI TEXT -->
+                    <!-- Tanggal Lahir (TTL) - TYPE DIGANTI JADI TEXT, MASKING DITAMBAHKAN -->
                     <div class="md:col-span-1">
                         <label for="dob" class="block text-sm font-medium text-gray-700 mb-1">Tgl Lahir</label>
-                        <input type="text" id="dob" oninput="calculateNutritionStatus()" 
+                        <input type="text" id="dob" oninput="applyDateMask(this); calculateNutritionStatus();" 
                                placeholder="HH/BB/TTTT"
+                               maxlength="10"
                                class="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
                     </div>
                     
@@ -200,27 +201,34 @@
                            placeholder="Cari berdasarkan nama..."
                            class="w-full p-2 mb-2 border border-gray-300 rounded-lg text-sm">
 
-                    <!-- NEW RADIO BUTTON FILTER -->
-                    <div id="table-filter-index" class="flex flex-wrap gap-2 mb-3 p-2 bg-white rounded-lg border border-gray-200">
-                        <label class="inline-flex items-center text-sm font-medium text-gray-700">Tampilkan Indeks:</label>
-                        <label class="inline-flex items-center text-xs space-x-1">
-                            <input type="radio" name="table_index_view" value="WFA" checked onchange="setTableIndex(this.value)" class="form-radio text-primary border-primary">
-                            <span>BB/U</span>
-                        </label>
-                        <label class="inline-flex items-center text-xs space-x-1">
-                            <input type="radio" name="table_index_view" value="HFA" onchange="setTableIndex(this.value)" class="form-radio text-primary border-primary">
-                            <span>TB/U</span>
-                        </label>
-                        <label class="inline-flex items-center text-xs space-x-1">
-                            <input type="radio" name="table_index_view" value="WFL" onchange="setTableIndex(this.value)" class="form-radio text-primary border-primary">
-                            <span>BB/TB</span>
-                        </label>
-                        <label class="inline-flex items-center text-xs space-x-1">
-                            <input type="radio" name="table_index_view" value="BFA" onchange="setTableIndex(this.value)" class="form-radio text-primary border-primary">
-                            <span>IMT/U</span>
-                        </label>
+                    <!-- NEW RADIO BUTTON FILTER DAN COPY BUTTON -->
+                    <div id="table-filter-index" class="flex flex-wrap gap-2 mb-3 p-2 bg-white rounded-lg border border-gray-200 items-center justify-between">
+                        <div class="flex flex-wrap gap-2 items-center">
+                            <label class="inline-flex items-center text-sm font-medium text-gray-700">Tampilkan Indeks:</label>
+                            <label class="inline-flex items-center text-xs space-x-1">
+                                <input type="radio" name="table_index_view" value="WFA" checked onchange="setTableIndex(this.value)" class="form-radio text-primary border-primary">
+                                <span>BB/U</span>
+                            </label>
+                            <label class="inline-flex items-center text-xs space-x-1">
+                                <input type="radio" name="table_index_view" value="HFA" onchange="setTableIndex(this.value)" class="form-radio text-primary border-primary">
+                                <span>TB/U</span>
+                            </label>
+                            <label class="inline-flex items-center text-xs space-x-1">
+                                <input type="radio" name="table_index_view" value="WFL" onchange="setTableIndex(this.value)" class="form-radio text-primary border-primary">
+                                <span>BB/TB</span>
+                            </label>
+                            <label class="inline-flex items-center text-xs space-x-1">
+                                <input type="radio" name="table_index_view" value="BFA" onchange="setTableIndex(this.value)" class="form-radio text-primary border-primary">
+                                <span>IMT/U</span>
+                            </label>
+                        </div>
+                        
+                        <button onclick="copyFilteredDataToClipboard()" class="px-3 py-1 bg-info text-white rounded-lg text-xs font-semibold hover:bg-blue-600 transition duration-150 flex items-center space-x-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-2m-4-4l-4 4m0 0l-4-4m4 4V5"></path></svg>
+                            <span>Copy Data (Excel)</span>
+                        </button>
                     </div>
-                    <!-- END NEW RADIO BUTTON FILTER -->
+                    <!-- END NEW RADIO BUTTON FILTER DAN COPY BUTTON -->
 
                     <div id="child-list-container" class="table-container max-h-48 overflow-y-auto p-1 bg-white rounded-lg border">
                         <table class="w-full profile-table text-left border-collapse">
@@ -586,7 +594,11 @@
                 document.getElementById('message-box').className = 'p-3 text-sm bg-red-100 border-l-4 border-danger rounded-lg';
             } finally {
                  window.pendingDeletionId = null;
-                 setTimeout(window.resetMessageBox, 3000);
+                 // Asumsi window.resetMessageBox ada, tapi jika tidak ada, biarkan setTimeout saja.
+                 setTimeout(() => {
+                     document.getElementById('message-box').innerHTML = 'Masukkan data antropometri anak (Nama, TTL, BB, TB/PB) untuk memulai perhitungan status gizi.';
+                     document.getElementById('message-box').className = 'p-3 text-sm text-green-800 bg-green-100 border-l-4 border-success rounded-lg';
+                 }, 3000);
             }
         }
 
@@ -967,6 +979,124 @@
             [204, 0.659, 21.14, 0.186], [216, 0.706, 21.28, 0.199], [228, 0.729, 21.34, 0.212]
         ];
 
+
+        // --- FUNGSI DATE MASKING (BARU) ---
+        function applyDateMask(input) {
+            let value = input.value.replace(/\D/g, ''); // Hapus semua non-digit
+            let formatted = '';
+
+            if (value.length > 0) { formatted += value.substring(0, 2); }
+            if (value.length > 2) { formatted += '/' + value.substring(2, 4); }
+            if (value.length > 4) { formatted += '/' + value.substring(4, 8); }
+
+            // Batasi panjang total input (HH/BB/TTTT)
+            input.value = formatted.substring(0, 10);
+        }
+        window.applyDateMask = applyDateMask;
+        
+        // --- FUNGSI MESSAGE BOX UTILITY (GLOBAL) ---
+        function showMessage(text, type = 'info') {
+            const messageBox = document.getElementById('message-box');
+            let bgClass, borderClass, textClass;
+
+            if (type === 'success') {
+                bgClass = 'bg-green-100';
+                borderClass = 'border-success';
+                textClass = 'text-green-800';
+            } else if (type === 'danger') {
+                bgClass = 'bg-red-100';
+                borderClass = 'border-danger';
+                textClass = 'text-red-800';
+            } else if (type === 'warning') {
+                bgClass = 'bg-yellow-100';
+                borderClass = 'border-warning';
+                textClass = 'text-yellow-800';
+            } else { // info/default
+                bgClass = 'bg-blue-100';
+                borderClass = 'border-info';
+                textClass = 'text-blue-800';
+            }
+
+            messageBox.innerHTML = `<span class="${textClass}">${text}</span>`;
+            messageBox.className = `p-3 text-sm rounded-lg border-l-4 ${bgClass} ${borderClass}`;
+
+            // Simple reset to default green state after 3 seconds
+            setTimeout(() => {
+                messageBox.innerHTML = 'Masukkan data antropometri anak (Nama, TTL, BB, TB/PB) untuk memulai perhitungan status gizi.';
+                messageBox.className = 'p-3 text-sm text-green-800 bg-green-100 border-l-4 border-success rounded-lg';
+            }, 3000);
+        }
+        window.showMessage = showMessage;
+        
+        // --- FUNGSI COPY DATA (BARU) ---
+        window.copyFilteredDataToClipboard = function() {
+            const index = window.currentTableIndex;
+            const profiles = window.allChildProfiles;
+
+            if (profiles.length === 0) {
+                window.showMessage('Tidak ada data profil yang tersimpan untuk disalin.', 'warning');
+                return;
+            }
+
+            // Headers
+            const headerIndex = {
+                'WFA': 'BB/U (Z)',
+                'HFA': 'TB/U (Z)',
+                'WFL': 'BB/TB (Z)',
+                'BFA': 'IMT/U (Z)'
+            };
+
+            let tsv = ['No', 'Nama', 'JK', 'Tgl Lahir (HH/BB/TTTT)', 'BB (kg)', 'TB/PB (cm)', headerIndex[index], 'Status'].join('\t') + '\n';
+            
+            profiles.forEach((data, i) => {
+                const status = data.lastStatus[index] || {};
+                const zScore = status.zScore === 'N/A' || typeof status.zScore !== 'number' ? 'N/A' : status.zScore.toFixed(2);
+                const classification = status.classification || 'N/A';
+                
+                // Konversi tanggal ISO (YYYY-MM-DD) kembali ke HH/BB/TTTT untuk display
+                const dobDisplay = window.dateToDMY(data.dob); 
+                
+                const row = [
+                    i + 1,
+                    data.name,
+                    data.sex === 'male' ? 'L' : 'P',
+                    dobDisplay,
+                    data.weight,
+                    data.height,
+                    zScore,
+                    classification
+                ].join('\t');
+                
+                tsv += row + '\n';
+            });
+
+            // Menyalin ke clipboard menggunakan metode fallback (document.execCommand)
+            let success = false;
+            let tempElement = document.createElement('textarea');
+            tempElement.value = tsv;
+            tempElement.setAttribute('readonly', '');
+            tempElement.style.position = 'absolute';
+            tempElement.style.left = '-9999px';
+            document.body.appendChild(tempElement);
+            tempElement.select();
+            
+            try {
+                // Gunakan document.execCommand('copy') karena navigator.clipboard diblokir
+                success = document.execCommand('copy');
+            } catch (err) {
+                console.error('Gagal menyalin:', err);
+                success = false;
+            } finally {
+                document.body.removeChild(tempElement);
+            }
+
+            if (success) {
+                window.showMessage(`Berhasil menyalin ${profiles.length} baris data ${index} ke clipboard. Siap ditempel di Excel!`, 'success');
+            } else {
+                window.showMessage('Gagal menyalin data ke clipboard. Peramban (browser) Anda mungkin memblokir fungsi ini.', 'danger');
+            }
+        };
+        
 
         // --- FUNGSI AKORDION (GLOBAL) ---
         window.toggleAccordion = function(contentId, iconId) {
@@ -1464,7 +1594,9 @@
             }
             
             // Set Tanggal Hari Ini saat memuat
-            const defaultDOB = new Date(new Date().setFullYear(new Date().getFullYear() - 2));
+            const today = new Date();
+            const defaultDOB = new Date();
+            defaultDOB.setFullYear(today.getFullYear() - 2); // 2 tahun lalu
             const defaultDOBISO = window.dateToISO(defaultDOB);
             
             // Mengatur nilai input TTL dengan format D/M/Y
