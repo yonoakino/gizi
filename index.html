@@ -7,6 +7,7 @@
     <!-- Memuat Tailwind CSS untuk styling modern dan responsif -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+        // Konfigurasi Tailwind untuk penyesuaian estetika
         tailwind.config = {
             theme: {
                 extend: {
@@ -27,10 +28,9 @@
         }
     </script>
     <style>
-        /* Gaya kustom */
+        /* Gaya kustom untuk memastikan tampilan responsif dan rapat */
         body {
             background-color: #f9fafb; /* Gray 50 */
-            padding: 8px; /* Mengurangi padding body menjadi p-2 */
         }
         .card {
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
@@ -47,114 +47,108 @@
             background-color: #f3f4f6;
             color: #4b5563;
             font-weight: 600;
+            padding: 0.5rem; /* p-2 */
         }
-        /* Membuat tabel profil lebih rapat untuk layar kecil */
+        /* Mengurangi padding dan margin untuk tampilan mobile yang kompak */
+        .compact-input-group > div {
+            margin-bottom: 0.5rem; /* Mengurangi jarak antar input */
+        }
+        .table-container {
+            overflow-x: auto; /* Memastikan tabel dapat digulir di layar kecil */
+        }
         .profile-table th, .profile-table td {
-            padding: 4px 6px; /* Padding sangat kecil */
-            text-align: left;
-            font-size: 0.75rem; /* Text xs */
+            padding: 0.3rem 0.5rem; /* Padding sel sangat kecil */
+            font-size: 0.7rem; /* Ukuran font kecil untuk data yang banyak */
+            white-space: nowrap;
+            vertical-align: middle;
         }
-        .profile-table th {
-            background-color: #e5e7eb; /* Gray 200 */
-            font-weight: 600;
-            color: #1f2937;
-            position: sticky;
-            top: 0;
+        .card-result {
+            padding: 0.75rem; /* Padding kartu hasil dikurangi */
         }
-        .profile-table tr:nth-child(even) {
-            background-color: #f9fafb; /* Lighter stripe */
+        .card-result h4 {
+            font-size: 0.875rem; /* Text-sm */
         }
-        .profile-table tr:hover {
-            background-color: #f3f4f6; /* Hover effect */
+        .radio-cell {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 4px;
+        }
+        .radio-cell input[type="radio"] {
+            margin-left: 4px;
             cursor: pointer;
         }
-        /* Menyesuaikan lebar header tabel agar lebih compact di mobile */
-        .profile-table th:nth-child(1) { width: 5%; } /* No */
-        .profile-table th:nth-child(3) { width: 5%; } /* J.Kel */
-        .profile-table th:nth-child(7), .profile-table th:nth-child(8), .profile-table th:nth-child(9), .profile-table th:nth-child(10) { 
-            font-size: 0.65rem; /* Z-score headers even smaller */
+        /* Style untuk akordion */
+        .accordion-content-inner {
+            padding: 0.75rem; /* p-3 */
+            background-color: white;
+            border-bottom: 1px solid #e5e7eb; /* border-gray-200 */
+        }
+        
+        /* MODAL STYLES */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            max-width: 90%;
+            width: 400px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
-<body class="font-sans min-h-screen p-2 flex flex-col items-center">
+<body class="font-sans min-h-screen p-2 md:p-4 flex flex-col items-center">
 
-    <div class="w-full max-w-6xl bg-white card rounded-2xl p-3 md:p-8 mt-4">
-        <h1 class="text-2xl md:text-4xl font-extrabold text-secondary mb-2 text-center">
+    <div class="w-full max-w-6xl bg-white card rounded-lg md:rounded-2xl p-4 md:p-6 mt-4 md:mt-8">
+        <h1 class="text-xl md:text-3xl font-extrabold text-secondary mb-2 text-center">
             Kalkulator Status Gizi Anak (WHO-LMS)
         </h1>
-        <p class="text-center text-gray-500 text-sm mb-4">
-            Perhitungan Z-score Real-time menggunakan Metode LMS WHO (Data 0-19 tahun).
+        <p class="text-center text-gray-500 text-sm md:text-base mb-6">
+            Perhitungan Z-score Real-time: 0-19 Tahun
         </p>
 
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6">
             
-            <!-- KOLOM DATA ANAK & MANAJEMEN PROFIL (KIRI) -->
-            <div class="md:col-span-1 space-y-3 p-2 border border-subtle rounded-xl bg-gray-50">
-                <h2 class="text-lg font-bold text-primary border-b pb-1">Manajemen Profil Anak</h2>
+            <!-- KOLOM DATA ANAK & INPUT (KIRI) -->
+            <div class="md:col-span-1 space-y-3 p-3 border border-subtle rounded-xl bg-gray-50">
                 
-                <!-- Nama Anak & ID -->
-                <div class="space-y-0.5">
-                    <label for="child-name" class="block text-xs font-medium text-gray-700">Nama Anak</label>
+                <!-- Nama Anak -->
+                <div class="mb-2">
+                    <label for="child-name" class="block text-sm font-medium text-gray-700 mb-1">Nama Anak</label>
                     <input type="text" id="child-name" value="Anak Saya" oninput="calculateNutritionStatus()"
                            class="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
-                    <p id="child-id-display" class="text-xs text-gray-400">ID Profil: Baru</p>
                 </div>
 
-                <!-- Aksi Simpan/Hapus -->
-                <div class="flex space-x-1 pt-1">
-                    <button onclick="saveChildProfile()" class="w-full p-2 text-sm bg-primary text-white font-bold rounded-lg hover:bg-green-700 transition duration-150">
-                        Simpan
-                    </button>
-                    <button onclick="clearCurrentChild()" class="w-full p-2 text-sm bg-gray-300 text-secondary font-bold rounded-lg hover:bg-gray-400 transition duration-150">
-                        Profil Baru
-                    </button>
-                </div>
+                <!-- Grid Input Rapat (TTL, JK, BB, TB/PB) -->
+                <div class="grid grid-cols-2 gap-2 compact-input-group">
 
-                <!-- Daftar Profil -->
-                <div class="mt-2">
-                    <h3 class="text-sm font-bold text-secondary mb-1">Profil Tersimpan</h3>
-                    
-                    <!-- Input Pencarian Profil -->
-                    <input type="text" id="profile-search" oninput="filterChildList()" placeholder="Cari Nama..."
-                           class="w-full p-1.5 mb-1 border border-gray-300 rounded-lg text-xs focus:ring-primary focus:border-primary transition duration-150">
-                           
-                    <div id="child-list" class="space-y-1 max-h-40 overflow-y-auto bg-white rounded-lg border">
-                        <p class="text-xs text-gray-500 p-2">Memuat data...</p>
-                    </div>
-                </div>
-
-                <h2 class="text-lg font-bold text-primary border-b pb-1 pt-2">Data Antropometri</h2>
-
-                <!-- Tanggal Sekarang (Otomatis) -->
-                <div class="space-y-0.5">
-                    <label for="current-date-display" class="block text-xs font-medium text-gray-700">Tanggal Sekarang</label>
-                    <div id="current-date-display"
-                           class="w-full p-2 text-sm border border-gray-300 rounded-lg auto-calculated-field text-gray-600">
-                        <!-- Tanggal akan diisi oleh JS -->
-                    </div>
-                </div>
-
-                <!-- Usia (Otomatis) -->
-                <div class="space-y-0.5">
-                    <label for="age-display" class="block text-xs font-medium text-gray-700">Usia Terhitung</label>
-                    <div id="age-display"
-                           class="w-full p-2 text-sm border border-gray-300 rounded-lg auto-calculated-field text-gray-600">
-                        <!-- Usia akan diisi oleh JS -->
-                    </div>
-                </div>
-                
-                <!-- COMPACT INPUTS (TTL, JK, BB, TB/PB) - 2x2 Grid for Mobile -->
-                <div class="grid grid-cols-2 gap-2">
-                    <!-- Tanggal Lahir (TTL) -->
-                    <div class="space-y-0.5">
-                        <label for="dob" class="block text-xs font-medium text-gray-700">TTL</label>
-                        <input type="date" id="dob" oninput="calculateNutritionStatus()" 
+                    <!-- Tanggal Lahir (TTL) - TYPE DIGANTI JADI TEXT -->
+                    <div class="md:col-span-1">
+                        <label for="dob" class="block text-sm font-medium text-gray-700 mb-1">Tgl Lahir</label>
+                        <input type="text" id="dob" oninput="calculateNutritionStatus()" 
+                               placeholder="HH/BB/TTTT"
                                class="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
                     </div>
                     
                     <!-- Jenis Kelamin (JK) -->
-                    <div class="space-y-0.5">
-                        <label for="sex" class="block text-xs font-medium text-gray-700">JK</label>
+                    <div>
+                        <label for="sex" class="block text-sm font-medium text-gray-700 mb-1">JK</label>
                         <select id="sex" oninput="calculateNutritionStatus()" 
                                 class="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
                             <option value="male">Laki-laki</option>
@@ -162,79 +156,167 @@
                         </select>
                     </div>
 
-                    <!-- Berat Badan (BB kg) -->
-                    <div class="space-y-0.5">
-                        <label for="weight" class="block text-xs font-medium text-gray-700">BB (kg)</label>
+                    <!-- Berat Badan (BB) -->
+                    <div>
+                        <label for="weight" class="block text-sm font-medium text-gray-700 mb-1">BB (kg)</label>
                         <input type="number" id="weight" value="13.0" step="0.1" min="0" oninput="calculateNutritionStatus()" 
                                placeholder="13.0" 
                                class="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
                     </div>
 
-                    <!-- Tinggi Badan (TB/PB cm) -->
-                    <div class="space-y-0.5">
-                        <label for="height" class="block text-xs font-medium text-gray-700">TB/PB (cm)</label>
+                    <!-- Tinggi Badan (TB/PB) -->
+                    <div>
+                        <label for="height" class="block text-sm font-medium text-gray-700 mb-1">TB/PB (cm)</label>
                         <input type="number" id="height" value="90.0" step="0.1" min="0" oninput="calculateNutritionStatus()" 
                                placeholder="90.0" 
                                class="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
                     </div>
                 </div>
+
+                <!-- Usia Terhitung (Otomatis) -->
+                <div>
+                    <label for="age-display" class="block text-sm font-medium text-gray-700 mb-1">Usia Terhitung</label>
+                    <div id="age-display"
+                           class="w-full p-2 border border-gray-300 rounded-lg auto-calculated-field text-sm text-gray-600">
+                        <!-- Usia akan diisi oleh JS -->
+                    </div>
+                </div>
+
+                <!-- Aksi Simpan -->
+                <button onclick="saveChildProfile()" class="w-full p-3 bg-primary text-white font-bold rounded-lg hover:bg-green-700 transition duration-150 text-sm">
+                    Simpan Profil
+                </button>
             </div>
 
             <!-- KOLOM HASIL & VISUALISASI (KANAN) -->
-            <div class="md:col-span-3 space-y-3">
-                <h2 class="text-xl font-bold text-secondary mb-2">Hasil Z-score & Visualisasi</h2>
+            <div class="md:col-span-3 space-y-4">
+                
+                <!-- START: PROFIL TERSIMPAN -->
+                <div class="p-3 border border-subtle rounded-xl bg-gray-50">
+                    <!-- H2 "Profil Tersimpan" dihilangkan -->
+                    
+                    <!-- Input Pencarian -->
+                    <input type="text" id="profile-search" oninput="filterChildList()" 
+                           placeholder="Cari berdasarkan nama..."
+                           class="w-full p-2 mb-2 border border-gray-300 rounded-lg text-sm">
 
-                <!-- Area Pesan Kesalahan/Informasi -->
-                <div id="message-box" class="p-2 text-xs text-green-800 bg-green-100 border-l-4 border-success rounded-lg">
-                    <!-- Pesan akan diisi di sini setelah perhitungan -->
-                </div>
+                    <!-- NEW RADIO BUTTON FILTER -->
+                    <div id="table-filter-index" class="flex flex-wrap gap-2 mb-3 p-2 bg-white rounded-lg border border-gray-200">
+                        <label class="inline-flex items-center text-sm font-medium text-gray-700">Tampilkan Indeks:</label>
+                        <label class="inline-flex items-center text-xs space-x-1">
+                            <input type="radio" name="table_index_view" value="WFA" checked onchange="setTableIndex(this.value)" class="form-radio text-primary border-primary">
+                            <span>BB/U</span>
+                        </label>
+                        <label class="inline-flex items-center text-xs space-x-1">
+                            <input type="radio" name="table_index_view" value="HFA" onchange="setTableIndex(this.value)" class="form-radio text-primary border-primary">
+                            <span>TB/U</span>
+                        </label>
+                        <label class="inline-flex items-center text-xs space-x-1">
+                            <input type="radio" name="table_index_view" value="WFL" onchange="setTableIndex(this.value)" class="form-radio text-primary border-primary">
+                            <span>BB/TB</span>
+                        </label>
+                        <label class="inline-flex items-center text-xs space-x-1">
+                            <input type="radio" name="table_index_view" value="BFA" onchange="setTableIndex(this.value)" class="form-radio text-primary border-primary">
+                            <span>IMT/U</span>
+                        </label>
+                    </div>
+                    <!-- END NEW RADIO BUTTON FILTER -->
 
-                <!-- Pilihan Indeks untuk Visualisasi -->
-                <div class="flex items-center space-x-3 p-2 bg-gray-100 rounded-lg">
-                    <label for="visualization-index" class="text-sm font-medium text-gray-700">Visualisasi Kurva:</label>
-                    <select id="visualization-index" onchange="updateVisualization()" 
-                            class="p-1.5 border border-gray-300 rounded-lg text-sm bg-white">
-                        <option value="WFA">BB/U (WFA)</option>
-                        <option value="HFA">TB/U (HFA)</option>
-                        <option value="WFL">BB/TB (WFL)</option>
-                        <option value="BFA">IMT/U (BFA)</option>
-                    </select>
-                    <span id="zscore-label" class="font-bold text-primary text-sm"></span>
-                </div>
-
-                <!-- Canvas Visualisasi -->
-                <div class="w-full bg-white border border-gray-300 rounded-xl shadow-inner overflow-hidden">
-                    <canvas id="zscore-canvas" width="600" height="300" class="w-full h-auto"></canvas>
-                </div>
-
-                <!-- Grid Hasil untuk 4 Indeks -->
-                <div class="mt-4">
-                    <h2 class="text-lg font-bold text-secondary mb-2">Ringkasan Klasifikasi</h2>
-                    <div id="results-grid" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                        <!-- Cards Hasil akan di-render di sini -->
+                    <div id="child-list-container" class="table-container max-h-48 overflow-y-auto p-1 bg-white rounded-lg border">
+                        <table class="w-full profile-table text-left border-collapse">
+                            <thead>
+                                <tr id="child-list-header" class="bg-gray-200 sticky top-0">
+                                    <!-- Headers will be dynamically generated by JS -->
+                                </tr>
+                            </thead>
+                            <tbody id="child-list">
+                                <tr><td colspan="6" class="text-center text-gray-500">Memuat data...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
+                <!-- END: PROFIL TERSIMPAN -->
+
+                <!-- START: Ringkasan Klasifikasi (AKORDION 1) -->
+                <div class="mt-6">
+                    <button id="accordion-toggle-summary" onclick="toggleAccordion('accordion-content-summary', 'accordion-icon-summary')" class="w-full flex justify-between items-center p-3 bg-secondary text-white font-bold rounded-lg hover:bg-gray-700 transition duration-150 text-left">
+                        <h2 class="text-lg md:text-xl font-bold">Ringkasan Klasifikasi</h2>
+                        <svg id="accordion-icon-summary" class="w-5 h-5 transition-transform duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <!-- Konten akordion yang dapat disembunyikan -->
+                    <div id="accordion-content-summary" class="overflow-hidden transition-all duration-300 max-h-0 border border-t-0 rounded-b-lg">
+                        <div id="results-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3 accordion-content-inner">
+                            <!-- Cards Hasil akan di-render di sini -->
+                        </div>
+                    </div>
+                </div>
+                <!-- END: Ringkasan Klasifikasi -->
+
+
+                <!-- START: Hasil Z-score & Visualisasi (AKORDION 2) -->
+                <div class="mt-6">
+                    <button id="accordion-toggle-results" onclick="toggleAccordion('accordion-content-results', 'accordion-icon-results')" class="w-full flex justify-between items-center p-3 bg-secondary text-white font-bold rounded-lg hover:bg-gray-700 transition duration-150 text-left">
+                        <h2 class="text-lg md:text-xl font-bold">Hasil Z-score & Visualisasi</h2>
+                        <svg id="accordion-icon-results" class="w-5 h-5 transition-transform duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="accordion-content-results" class="overflow-hidden transition-all duration-300 max-h-0 border border-t-0 rounded-b-lg">
+                        <div class="accordion-content-inner space-y-4">
+                            <!-- Area Pesan Kesalahan/Informasi (Dibiarkan di luar grid) -->
+                            <div id="message-box" class="p-3 text-sm text-green-800 bg-green-100 border-l-4 border-success rounded-lg">
+                                <!-- Pesan akan diisi di sini setelah perhitungan -->
+                                Masukkan data antropometri anak (Nama, TTL, BB, TB/PB) untuk memulai perhitungan status gizi.
+                            </div>
+
+                            <!-- Pilihan Indeks untuk Visualisasi -->
+                            <div class="flex flex-wrap items-center space-x-3 p-3 bg-gray-100 rounded-lg text-sm">
+                                <label for="visualization-index" class="font-medium text-gray-700">Visualisasi Kurva:</label>
+                                <select id="visualization-index" onchange="updateVisualization()" 
+                                        class="p-1 border border-gray-300 rounded-lg text-sm bg-white">
+                                    <option value="WFA">BB/U (WFA)</option>
+                                    <option value="HFA">TB/U (HFA)</option>
+                                    <option value="WFL">BB/TB (WFL)</option>
+                                    <option value="BFA">IMT/U (BFA)</option>
+                                </select>
+                                <span id="zscore-label" class="font-bold text-primary ml-4"></span>
+                            </div>
+
+                            <!-- Canvas Visualisasi -->
+                            <div class="w-full bg-white border border-gray-300 rounded-xl shadow-inner overflow-hidden">
+                                <canvas id="zscore-canvas" width="600" height="300" class="w-full h-auto"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- END: Hasil Z-score & Visualisasi -->
             </div>
 
         </div>
-
-        <div class="mt-6 p-3 text-xs text-gray-600 bg-gray-100 rounded-lg">
-            <p class="font-bold text-secondary">Catatan Implementasi Teknis:</p>
-            <ul class="list-disc list-inside ml-2 mt-1 space-y-0.5">
-                <li>**Penyimpanan Data:** Profil anak disimpan secara persisten menggunakan **Firestore**.</li>
-                <li>**Data LMS WHO:** Data LMS akurat 0-60 bulan (WHO Child Growth Standards) dimuat.</li>
-                <li>**Ekstensi Usia Akurat:** Usia 61-228 bulan (hingga 19 tahun) menggunakan **data LMS WHO Reference 5-19 tahun yang akurat** untuk TB/U dan IMT/U.</li>
-                <li>**Batasan:** BB/U dan BB/TB dinonaktifkan di atas 60 bulan.</li>
-                <li>**Visualisasi:** Grafik Z-score menunjukkan posisi anak relatif terhadap garis -3, -2, 0, +2, +3 SD.</li>
-            </ul>
+        
+    </div>
+    
+    <!-- MODAL KONFIRMASI HAPUS -->
+    <div id="delete-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="text-lg font-bold text-danger mb-3">Konfirmasi Penghapusan Profil</h3>
+            <p class="text-sm text-gray-700 mb-4">
+                Anda yakin ingin menghapus profil <strong id="modal-child-name"></strong>? Tindakan ini tidak dapat dibatalkan.
+            </p>
+            <input type="text" id="modal-delete-confirmation-input" 
+                   placeholder="Ketik 'HAPUS' (huruf kapital) untuk konfirmasi" 
+                   class="mt-2 w-full p-2 border border-danger rounded-lg text-sm focus:ring-danger focus:border-danger">
+            <div class="flex justify-end space-x-2 mt-4">
+                <button onclick="hideDeleteModal()" class="px-4 py-2 text-sm font-semibold rounded-lg bg-gray-300 text-secondary hover:bg-gray-400 transition duration-150">Batal</button>
+                <button onclick="confirmDeletion()" class="px-4 py-2 text-sm font-semibold rounded-lg bg-danger text-white hover:bg-red-700 transition duration-150">Konfirmasi Hapus</button>
+            </div>
         </div>
     </div>
+    <!-- END MODAL -->
 
     <!-- Import Firebase Services (MUST BE type="module") -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, collection, query, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, collection, query, onSnapshot, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
@@ -244,16 +326,92 @@
         window.db = db; // Make global for use outside module
         window.auth = auth;
         window.userId = null;
-        window.allChildProfiles = []; // Store all profiles globally
-
+        window.currentChildId = null;
+        window.pendingDeletionId = null; // State baru untuk konfirmasi penghapusan
+        window.allChildProfiles = []; // Cache for filtering
         
         const app = initializeApp(firebaseConfig);
         db = getFirestore(app);
         auth = getAuth(app);
         window.db = db; 
         window.auth = auth;
+        
+        /** Menampilkan modal konfirmasi hapus. */
+        window.showDeleteModal = function(docId, name, event) {
+            if (event) event.stopPropagation();
+            window.pendingDeletionId = docId;
+            document.getElementById('modal-child-name').textContent = name;
+            document.getElementById('modal-delete-confirmation-input').value = '';
+            document.getElementById('delete-modal').classList.remove('hidden');
+        }
+
+        /** Menyembunyikan modal konfirmasi hapus. */
+        window.hideDeleteModal = function() {
+            window.pendingDeletionId = null;
+            document.getElementById('delete-modal').classList.add('hidden');
+        }
+        
+        /** Utility: Converts YYYY-MM-DD to DD/MM/YYYY */
+        window.dateToDMY = (isoDate) => {
+            if (!isoDate) return '';
+            try {
+                const [year, month, day] = isoDate.split('-');
+                return `${day}/${month}/${year}`;
+            } catch {
+                return '';
+            }
+        }
 
         // --- FIREBASE UTILITY FUNCTIONS ---
+        
+        /** Mengambil nilai tanggal lahir dari input date tunggal (tipe text, format DD/MM/YYYY). */
+        window.getDOBString = function() {
+            const dobInput = document.getElementById('dob').value;
+            if (!dobInput) return null;
+
+            // Expecting DD/MM/YYYY format
+            const parts = dobInput.split('/');
+            if (parts.length !== 3) return null;
+
+            const [dayStr, monthStr, yearStr] = parts;
+            const day = parseInt(dayStr, 10);
+            const month = parseInt(monthStr, 10);
+            const year = parseInt(yearStr, 10);
+
+            // Basic numerical validation
+            if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+            
+            // Periksa batasan sederhana (bulan 1-12, tahun 1900-2100)
+            if (month < 1 || month > 12 || year < 1900 || year > 2100) return null;
+
+            // Check date validity (using Date object behavior)
+            const dateCheck = new Date(year, month - 1, day); // month is 0-indexed for JS Date constructor
+
+            // Check if the parts match the constructed date (e.g., prevents 30/02/2024 from being valid)
+            if (dateCheck.getFullYear() !== year || dateCheck.getMonth() !== month - 1 || dateCheck.getDate() !== day) {
+                return null;
+            }
+
+            // Return in ISO format (YYYY-MM-DD) for consistency with new Date() and storage
+            const paddedMonth = String(month).padStart(2, '0');
+            const paddedDay = String(day).padStart(2, '0');
+            
+            return `${year}-${paddedMonth}-${paddedDay}`;
+        }
+
+
+        /** Mengambil data input dari form. */
+        window.getFormData = function() {
+            const name = document.getElementById('child-name').value;
+            const dob = window.getDOBString(); // Menggunakan fungsi baru untuk parsing D/M/Y
+            const sex = document.getElementById('sex').value;
+            const weight = parseFloat(document.getElementById('weight').value);
+            const height = parseFloat(document.getElementById('height').value);
+            
+            if (!dob) return { name, dob: null, sex, weight, height };
+            
+            return { name, dob, sex, weight, height };
+        }
 
         /** Signs in the user and sets up the listener for child profiles. */
         window.setupFirebase = async function() {
@@ -267,10 +425,10 @@
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
                         window.userId = user.uid;
-                        console.log("Firebase Auth Ready. User ID:", window.userId);
+                        // console.log("Firebase Auth Ready. User ID:", window.userId);
                         window.loadChildProfiles();
                     } else {
-                        console.log("No user signed in. Using anonymous ID.");
+                        // console.log("No user signed in. Using anonymous ID.");
                         window.userId = 'anonymous'; // Fallback
                     }
                 });
@@ -282,180 +440,136 @@
         
         /** Saves the current child profile data to Firestore. */
         window.saveChildProfile = async function() {
+            // Reset konfirmasi hapus jika ada
+            window.hideDeleteModal();
+
             if (!window.userId || window.userId === 'anonymous') {
-                console.error("Authentication not ready or user is anonymous. Cannot save.");
+                document.getElementById('message-box').innerHTML = '<span class="text-red-800">Gagal Simpan: Autentikasi belum siap. Coba lagi.</span>';
+                document.getElementById('message-box').className = 'p-3 text-sm bg-red-100 border-l-4 border-danger rounded-lg';
                 return;
             }
 
-            const name = document.getElementById('child-name').value;
-            const dob = document.getElementById('dob').value;
-            const sex = document.getElementById('sex').value;
-            const weight = document.getElementById('weight').value;
-            const height = document.getElementById('height').value;
+            // 1. Ambil data form
+            const formData = window.getFormData();
+            const { name, dob, weight, height } = formData;
+            
+            let errorMessage = '';
 
-            // Ambil status gizi saat ini yang sudah dihitung (disimpan di global)
-            const lastStatus = window.currentZScoreResults;
-
-            if (!name || !dob || !weight || !height || !lastStatus || Object.keys(lastStatus).length === 0) {
-                console.error("All fields must be filled and status must be calculated to save.");
-                document.getElementById('message-box').innerHTML = '<span class="text-red-800">Gagal Simpan: Semua field data (Nama, Tgl Lahir, BB, TB) harus diisi dan dihitung.</span>';
-                document.getElementById('message-box').className = 'p-2 text-xs bg-red-100 border-l-4 border-danger rounded-lg';
+            // 2. Validasi input dasar
+            if (!name) { errorMessage = 'Nama Anak harus diisi.'; }
+            else if (!dob) { errorMessage = 'Tanggal Lahir harus diisi (format: HH/BB/TTTT).'; }
+            else if (isNaN(weight) || weight <= 0) { errorMessage = 'Berat Badan (BB) harus diisi dengan nilai yang valid (> 0).'; }
+            else if (isNaN(height) || height <= 0) { errorMessage = 'Tinggi/Panjang Badan (TB/PB) harus diisi dengan nilai yang valid (> 0).'; }
+            
+            if (errorMessage) {
+                document.getElementById('message-box').innerHTML = `<span class="text-red-800">Gagal Simpan: ${errorMessage}</span>`;
+                document.getElementById('message-box').className = 'p-3 text-sm bg-red-100 border-l-4 border-danger rounded-lg';
                 return;
             }
             
+            // 3. Paksa perhitungan status gizi terbaru
+            window.calculateNutritionStatus(); 
+
+            // 4. Ambil hasil status gizi dari global state setelah perhitungan
+            const lastStatus = window.currentZScoreResults; 
+            
+            // 5. Validasi hasil status gizi
+            const validStatus = Object.values(lastStatus).some(res => res && res.zScore && res.zScore !== 'N/A');
+            
+            if (!validStatus) {
+                document.getElementById('message-box').innerHTML = '<span class="text-red-800">Gagal Simpan: Status gizi belum berhasil dihitung. Periksa kembali input Usia dan Tinggi/Panjang Badan.</span>';
+                document.getElementById('message-box').className = 'p-3 text-sm bg-red-100 border-l-4 border-danger rounded-lg';
+                return;
+            }
+
             const docId = window.currentChildId || Date.now().toString();
+            
+            // Tentukan primary index default (WFA) atau yang terakhir dipilih
+            const primaryIndex = window.currentChildId 
+                                ? window.allChildProfiles.find(p => p.id === window.currentChildId)?.primaryIndex || 'WFA'
+                                : 'WFA';
+
+            // Gabungkan data antropometri dan status gizi terbaru
             const childData = { 
-                name, 
-                dob, 
-                sex, 
-                weight: parseFloat(weight), 
-                height: parseFloat(height), 
-                lastStatus: JSON.stringify(lastStatus), // Simpan hasil Z-score sebagai string JSON
+                ...formData, 
+                lastStatus: lastStatus, 
+                primaryIndex: primaryIndex, // Simpan indeks utama
                 savedAt: new Date() 
             };
+            
             const docRef = doc(db, 'artifacts', appId, 'users', window.userId, 'children', docId);
 
             try {
                 await setDoc(docRef, childData);
-                window.currentChildId = docId;
-                document.getElementById('child-id-display').textContent = `ID Profil: ${docId.substring(docId.length - 8)}`;
-                document.getElementById('message-box').innerHTML = '<span class="text-green-800">Profil anak berhasil disimpan!</span>';
-                document.getElementById('message-box').className = 'p-2 text-xs bg-green-100 border-l-4 border-success rounded-lg';
+                window.currentChildId = null; // Reset ID agar entri berikutnya dianggap 'Profil Baru'
+                
+                // Reset message box to default state or clearance state
+                document.getElementById('message-box').innerHTML = 'Masukkan data antropometri anak (Nama, TTL, BB, TB/PB) untuk memulai perhitungan status gizi.';
+                document.getElementById('message-box').className = 'p-3 text-sm text-green-800 bg-green-100 border-l-4 border-success rounded-lg';
+
+                // Setelah berhasil simpan, reset form untuk profil baru
+                window.clearCurrentChild();
+
             } catch (e) {
                 console.error("Error saving document: ", e);
                 document.getElementById('message-box').innerHTML = '<span class="text-red-800">Gagal Simpan ke Database. Lihat konsol untuk detail.</span>';
-                document.getElementById('message-box').className = 'p-2 text-xs bg-red-100 border-l-4 border-danger rounded-lg';
+                document.getElementById('message-box').className = 'p-3 text-sm bg-red-100 border-l-4 border-danger rounded-lg';
+            }
+        }
+        
+        /** Updates the primary index for a saved profile in Firestore. */
+        window.updateProfilePrimaryIndex = async function(docId, index, event) {
+            if (event) event.stopPropagation();
+            window.hideDeleteModal();
+
+            const docRef = doc(db, 'artifacts', appId, 'users', window.userId, 'children', docId);
+
+            try {
+                await updateDoc(docRef, { primaryIndex: index });
+                // onSnapshot handles UI update
+            } catch(e) {
+                console.error("Failed to update primary index:", e);
+                const statusCell = document.getElementById(`status_cell_${docId}`);
+                if (statusCell) {
+                    statusCell.textContent = 'Gagal Update';
+                    statusCell.className = 'bg-danger-100 font-bold';
+                }
             }
         }
 
-        /** Renders the list of child profiles as a table based on the global array (allChildProfiles) and search filter. */
-        window.renderChildList = function(profiles) {
-            const listContainer = document.getElementById('child-list');
-            const searchQuery = document.getElementById('profile-search').value.toLowerCase();
-            
-            const filteredProfiles = profiles.filter(p => 
-                p.name.toLowerCase().includes(searchQuery)
-            ).sort((a, b) => b.savedAt - a.savedAt); // Sort by most recently saved
+        /** Memuat data anak yang dipilih ke form. */
+        window.loadChildData = function(id, data) {
+            window.hideDeleteModal();
+            window.currentChildId = id;
+            document.getElementById('child-name').value = data.name;
 
-            let tableHTML = '';
-            
-            if (filteredProfiles.length === 0) {
-                listContainer.innerHTML = `<p class="text-xs text-gray-500 p-2">${searchQuery ? 'Tidak ada profil yang cocok.' : 'Belum ada profil tersimpan.'}</p>`;
+            // MENGUBAH INPUT DATE DARI ISO KE D/M/Y UNTUK TAMPILAN
+            document.getElementById('dob').value = window.dateToDMY(data.dob); 
+
+            document.getElementById('sex').value = data.sex;
+            document.getElementById('weight').value = parseFloat(data.weight);
+            document.getElementById('height').value = parseFloat(data.height);
+
+            window.calculateNutritionStatus(); 
+
+            document.getElementById('message-box').innerHTML = '<span class="text-info-800">Profil ' + data.name + ' berhasil dimuat.</span>';
+            document.getElementById('message-box').className = 'p-3 text-sm bg-blue-100 border-l-4 border-info rounded-lg';
+        }
+        
+        /** Melakukan proses penghapusan setelah konfirmasi MODAL. */
+        window.confirmDeletion = async function() {
+            const docId = window.pendingDeletionId;
+            if (!docId) return;
+
+            const input = document.getElementById('modal-delete-confirmation-input').value;
+            if (input !== 'HAPUS') {
+                // Konfirmasi gagal
+                document.getElementById('modal-delete-confirmation-input').classList.add('border-danger');
+                document.getElementById('modal-delete-confirmation-input').placeholder = "Konfirmasi tidak valid. KETIK 'HAPUS'!";
                 return;
             }
-
-            tableHTML += `
-                <div class="overflow-x-auto">
-                    <table class="profile-table w-full border-collapse">
-                        <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>Nama</th>
-                                <th>J.Kel</th>
-                                <th>Tgl. Lahir</th>
-                                <th>BB (kg)</th>
-                                <th>TB (cm)</th>
-                                <th colspan="4" class="text-center">Z-score Status Gizi</th>
-                                <th>Kategori Gizi</th>
-                                <th>Aksi</th>
-                            </tr>
-                            <tr>
-                                <th colspan="6"></th>
-                                <th>BB/U</th>
-                                <th>TB/U</th>
-                                <th>BB/TB</th>
-                                <th>IMT/U</th>
-                                <th colspan="2"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
             
-            filteredProfiles.forEach((data, index) => {
-                let status = {};
-                try {
-                    // Parse status yang disimpan sebagai string JSON
-                    status = data.lastStatus ? JSON.parse(data.lastStatus) : {};
-                } catch (e) {
-                    console.error("Failed to parse lastStatus:", e, data.lastStatus);
-                }
-
-                const wfaStatus = status.WFA || { zScore: 'N/A', status: 'N/A', colorClass: 'bg-gray-400' };
-                const hfaStatus = status.HFA || { zScore: 'N/A' };
-                const wflStatus = status.WFL || { zScore: 'N/A' };
-                const bfaStatus = status.BFA || { zScore: 'N/A' };
-                
-                // Ambil Kategori Gizi utama dari BB/U (WFA)
-                const mainCategory = wfaStatus.status;
-                const categoryColor = wfaStatus.colorClass;
-                
-                // Format tanggal lahir menjadi d-m-y
-                const formattedDob = data.dob ? new Date(data.dob + 'T00:00:00').toLocaleDateString('id-ID', {day: '2-digit', month: '2-digit', year: '2-digit'}) : 'N/A';
-                
-                // Tambahkan baris ke tabel
-                tableHTML += `
-                    <tr onclick="window.loadChildData('${data.id}', '${data.name}', '${data.dob}', '${data.sex}', '${data.weight}', '${data.height}')">
-                        <td>${index + 1}</td>
-                        <td class="font-bold text-secondary">${data.name}</td>
-                        <td>${data.sex === 'male' ? 'L' : 'P'}</td>
-                        <td class="whitespace-nowrap">${formattedDob}</td>
-                        <td>${data.weight.toFixed(1)}</td>
-                        <td>${data.height.toFixed(1)}</td>
-                        <td title="${wfaStatus.status}" class="text-center">${wfaStatus.zScore}</td>
-                        <td title="${hfaStatus.status}" class="text-center">${hfaStatus.zScore}</td>
-                        <td title="${wflStatus.status}" class="text-center">${wflStatus.zScore}</td>
-                        <td title="${bfaStatus.status}" class="text-center">${bfaStatus.zScore}</td>
-                        <td class="whitespace-nowrap">
-                            <span class="px-1 py-0.5 text-xs text-white rounded-md ${categoryColor}">${mainCategory.split(' ')[0]}</span>
-                        </td>
-                        <td>
-                            <button class="text-red-500 hover:text-red-700 text-xs font-bold" onclick="window.deleteChildProfile('${data.id}', event)">Hapus</button>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            tableHTML += `
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            
-            listContainer.innerHTML = tableHTML;
-        }
-        
-        /** Loads all child profiles from Firestore and stores them globally. */
-        window.loadChildProfiles = function() {
-            if (!window.userId) return;
-
-            const q = query(collection(db, 'artifacts', appId, 'users', window.userId, 'children'));
-
-            onSnapshot(q, (snapshot) => {
-                // Konversi timestamp savedAt menjadi objek Date untuk sorting
-                window.allChildProfiles = snapshot.docs.map(doc => ({ 
-                    id: doc.id, 
-                    ...doc.data(), 
-                    savedAt: doc.data().savedAt?.toDate() || new Date(0) // Handle timestamp conversion
-                }));
-                window.renderChildList(window.allChildProfiles);
-            }, (error) => {
-                console.error("Error listening to documents: ", error);
-                document.getElementById('child-list').innerHTML = '<p class="text-xs text-red-500 p-2">Gagal memuat profil. Lihat konsol.</p>';
-            });
-        }
-        
-        /** Filters the child list based on the search input (triggered by oninput). */
-        window.filterChildList = function() {
-            window.renderChildList(window.allChildProfiles);
-        }
-
-        /** Deletes a specific child profile. */
-        window.deleteChildProfile = async function(docId, event) {
-            event.stopPropagation(); // Prevent loading the profile when deleting the button
-            
-            // Mengganti confirm() dengan prompt() untuk kepatuhan environment
-            const isConfirmed = prompt("Untuk menghapus profil ini, ketik 'HAPUS' di sini:"); 
-            if (isConfirmed !== 'HAPUS') return;
+            window.hideDeleteModal(); // Sembunyikan modal sebelum operasi DB
 
             const docRef = doc(db, 'artifacts', appId, 'users', window.userId, 'children', docId);
             try {
@@ -464,41 +578,174 @@
                     window.clearCurrentChild();
                 }
                 document.getElementById('message-box').innerHTML = '<span class="text-green-800">Profil berhasil dihapus.</span>';
-                document.getElementById('message-box').className = 'p-2 text-xs bg-green-100 border-l-4 border-success rounded-lg';
+                document.getElementById('message-box').className = 'p-3 text-sm bg-green-100 border-l-4 border-success rounded-lg';
+                
             } catch (e) {
                 console.error("Error deleting document: ", e);
                 document.getElementById('message-box').innerHTML = '<span class="text-red-800">Gagal menghapus profil.</span>';
-                document.getElementById('message-box').className = 'p-2 text-xs bg-red-100 border-l-4 border-danger rounded-lg';
+                document.getElementById('message-box').className = 'p-3 text-sm bg-red-100 border-l-4 border-danger rounded-lg';
+            } finally {
+                 window.pendingDeletionId = null;
+                 setTimeout(window.resetMessageBox, 3000);
             }
         }
 
+        /**
+         * Merender daftar anak ke dalam tabel, menerapkan filter dan menampilkan kolom berdasarkan
+         * indeks yang dipilih melalui radio button.
+         */
+        window.renderChildList = function() {
+            window.hideDeleteModal(); 
+            const searchText = document.getElementById('profile-search').value.toLowerCase();
+            const selectedIndex = window.currentTableIndex; // Ambil indeks terpilih
+            
+            const filteredProfiles = window.allChildProfiles.filter(profile => 
+                profile.name.toLowerCase().includes(searchText)
+            );
+            
+            const tbody = document.getElementById('child-list');
+            const thead = document.getElementById('child-list-header');
+
+            // 1. Definisikan Judul Indeks yang Dipilih
+            const indexTitles = {
+                'WFA': 'BB/U (Z-score)',
+                'HFA': 'TB/U (Z-score)',
+                'WFL': 'BB/TB (Z-score)',
+                'BFA': 'IMT/U (Z-score)'
+            };
+
+            // 2. GENERATE HEADER HANYA DENGAN 6 KOLOM
+            thead.innerHTML = `
+                <th class="p-1">No</th>
+                <th class="p-1">Nama</th>
+                <th class="p-1">JK</th>
+                <th class="p-1">${indexTitles[selectedIndex]}</th>
+                <th class="p-1">Status</th>
+                <th class="p-1">Aksi</th>
+            `;
+            
+            tbody.innerHTML = '';
+            
+            if (filteredProfiles.length === 0) {
+                // Pastikan colspan sesuai dengan jumlah kolom baru (6)
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-500 p-2">Tidak ada profil yang cocok atau belum tersimpan.</td></tr>';
+                return;
+            }
+            
+            // Map fungsi helper
+            const getZScoreDisplay = (res) => res?.zScore !== undefined ? (res.zScore === 'N/A' ? 'N/A' : res.zScore.toFixed(2)) : 'N/A';
+            const getStatusKategori = (res) => res?.classification || 'N/A';
+
+            filteredProfiles.forEach((data, index) => {
+                const status = data.lastStatus || {};
+                
+                // Ambil data status yang aktif berdasarkan radio button view
+                const activeStatus = status[selectedIndex] || {};
+                
+                const zScore = getZScoreDisplay(activeStatus);
+                const classificationText = getStatusKategori(activeStatus);
+                const activeZScore = activeStatus?.zScore;
+
+                const row = document.createElement('tr');
+                row.className = 'border-t hover:bg-gray-50 cursor-pointer';
+                
+                // Handler klik baris (muat data)
+                row.onclick = (e) => {
+                    // Cek jika target bukan tombol atau input (untuk mencegah load saat klik radio/tombol hapus)
+                    if (e.target.tagName !== 'BUTTON' && e.target.type !== 'radio' && e.target.tagName !== 'INPUT') {
+                        window.loadChildData(data.id, data);
+                    }
+                };
+                
+                // Menentukan warna latar belakang status berdasarkan Z-score TERPILIH
+                let statusBgClass = 'bg-gray-100'; 
+                if (activeZScore !== 'N/A' && typeof activeZScore === 'number') {
+                    if (selectedIndex === 'HFA') { // Logic Stunting
+                        if (activeZScore < -3) statusBgClass = 'bg-red-100';
+                        else if (activeZScore < -2) statusBgClass = 'bg-yellow-100';
+                        else statusBgClass = 'bg-green-50';
+                    } else { // Logic WFA, WFL, BFA
+                        if (activeZScore < -3 || activeZScore > 2) statusBgClass = 'bg-red-100';
+                        else if (activeZScore < -2 || activeZScore > 1) statusBgClass = 'bg-yellow-100';
+                        else statusBgClass = 'bg-green-50';
+                    }
+                }
+
+                // 3. GENERATE KONTEN BARIS SESUAI 6 KOLOM
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td class="font-medium truncate">${data.name}</td>
+                    <td>${data.sex === 'male' ? 'L' : 'P'}</td>
+                    <td class="text-center">${zScore}</td>
+                    <td id="status_cell_${data.id}" class="${statusBgClass} font-bold">${classificationText}</td>
+                    <td>
+                        <button type="button" class="text-red-500 hover:text-red-700 font-bold text-xs" 
+                            onclick="window.showDeleteModal('${data.id}', '${data.name}', event)">Hapus</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        /** Fungsi baru untuk mengatur indeks tabel yang dipilih */
+        window.setTableIndex = function(index) {
+            window.currentTableIndex = index;
+            window.renderChildList();
+        }
+
+
+        /** Memfilter daftar anak. */
+        window.filterChildList = function() {
+            window.renderChildList();
+        }
+
+        /** Loads all child profiles for the current user in real-time. */
+        window.loadChildProfiles = function() {
+            if (!window.userId) return;
+
+            const q = query(collection(db, 'artifacts', appId, 'users', window.userId, 'children'));
+            
+            onSnapshot(q, (snapshot) => {
+                window.allChildProfiles = [];
+                snapshot.docs.forEach(doc => {
+                    window.allChildProfiles.push({ id: doc.id, ...doc.data() });
+                });
+                // Sort profiles by save time (newest first)
+                window.allChildProfiles.sort((a, b) => b.savedAt.toDate() - a.savedAt.toDate());
+
+                window.renderChildList();
+            }, (error) => {
+                console.error("Error listening to documents: ", error);
+                const tbody = document.getElementById('child-list');
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-red-500 p-2">Gagal memuat profil.</td></tr>';
+            });
+        }
+        
         /** Clears the current data and sets a new child profile mode. */
         window.clearCurrentChild = function() {
+            window.hideDeleteModal();
             window.currentChildId = null;
-            document.getElementById('child-id-display').textContent = 'ID Profil: Baru';
-            document.getElementById('child-name').value = 'Anak Baru';
             
             // Reset antropometri defaults
-            document.getElementById('dob').value = dateToISO(new Date(new Date().setFullYear(new Date().getFullYear() - 2)));
+            const today = new Date();
+            const defaultDOB = new Date();
+            defaultDOB.setFullYear(today.getFullYear() - 2); // 2 tahun lalu
+            
+            // Format YYYY-MM-DD
+            const defaultDOBISO = window.dateToISO(defaultDOB); 
+
+            document.getElementById('child-name').value = 'Anak Baru';
+            
+            // NEW: Set single input date value in D/M/Y format
+            document.getElementById('dob').value = window.dateToDMY(defaultDOBISO);
+
             document.getElementById('sex').value = 'male';
             document.getElementById('weight').value = 13.0;
             document.getElementById('height').value = 90.0;
             
             window.calculateNutritionStatus();
-        }
-
-        /** Loads selected child data into the form. */
-        window.loadChildData = function(id, name, dob, sex, weight, height) {
-            window.currentChildId = id;
-            document.getElementById('child-id-display').textContent = `ID Profil: ${id.substring(id.length - 8)}`;
-            document.getElementById('child-name').value = name;
-            document.getElementById('dob').value = dob;
-            // Gunakan parseFloat dan toFixed untuk memastikan format data numerik yang benar
-            document.getElementById('sex').value = sex;
-            document.getElementById('weight').value = parseFloat(weight).toFixed(1);
-            document.getElementById('height').value = parseFloat(height).toFixed(1);
-            
-            window.calculateNutritionStatus();
+            document.getElementById('profile-search').value = ''; // Clear search field
+            window.renderChildList(); // Rerender list
         }
         
         // Start Firebase setup
@@ -512,640 +759,724 @@
         // Batas Usia Maksimal: 19 tahun * 12 bulan = 228 bulan
         const MAX_AGE_MONTHS = 228;
 
-        // --- FUNGSI INTERPOLASI LMS ---
+        // --- GLOBAL STATE ---
+        let currentAgeMonths = 0;
+        window.currentZScoreResults = {};
+        window.lmsDataCache = {}; // Cache for LMS data based on index and sex
+        window.currentTableIndex = 'WFA'; // Default index for table view
         
-        // Fungsi untuk menginterpolasi nilai L, M, S antara titik jangkar WHO
-        function interpolateLMS(anchors) {
-            const data = [];
-            for (let i = 0; i < anchors.length - 1; i++) {
-                const [age1, L1, M1, S1] = anchors[i];
-                const [age2, L2, M2, S2] = anchors[i + 1];
+        // UTILITY: Format Date to ISO String (Dipindahkan ke sini agar tersedia global sebelum window.onload)
+        window.dateToISO = (date) => date.toISOString().split('T')[0];
 
-                for (let age = age1; age < age2; age++) {
-                    const ratio = (age - age1) / (age2 - age1);
-                    const L = L1 + ratio * (L2 - L1);
-                    const M = M1 + ratio * (M2 - M1);
-                    const S = S1 + ratio * (S2 - S1);
-                    data.push([age, L, M, S]);
-                }
-            }
-            // Tambahkan titik jangkar terakhir
-            data.push(anchors[anchors.length - 1]);
-            return data;
-        }
-
-        // --- DATA WHO 0-60 BULAN (CHILD GROWTH STANDARDS) ---
-
+        // --- DATA REFERENSI WHO-LMS LENGKAP (0-60m) dan LMS WHO Reference (61-228m) ---
+        
         // BB/U - Laki-laki (WFA Male 0-60m)
         const WFA_M_LMS = [
             [0, 1.156, 3.322, 0.145], [1, 1.146, 4.545, 0.141], [2, 1.132, 5.666, 0.136], [3, 1.111, 6.592, 0.131], [4, 1.085, 7.301, 0.126], 
-            [5, 1.057, 7.828, 0.122], [6, 1.026, 8.243, 0.118], [7, 0.993, 8.579, 0.114], [8, 0.96, 8.859, 0.111], [9, 0.925, 9.102, 0.108], 
-            [10, 0.891, 9.319, 0.106], [11, 0.855, 9.516, 0.104], [12, 0.82, 9.697, 0.102], [13, 0.784, 9.866, 0.101], [14, 0.749, 10.024, 0.099], 
+            [5, 1.057, 7.828, 0.122], [6, 1.026, 8.243, 0.118], [7, 0.993, 8.579, 0.114], [8, 0.960, 8.859, 0.111], [9, 0.925, 9.102, 0.108], 
+            [10, 0.891, 9.319, 0.106], [11, 0.855, 9.516, 0.104], [12, 0.820, 9.697, 0.102], [13, 0.784, 9.866, 0.101], [14, 0.749, 10.024, 0.099], 
             [15, 0.713, 10.174, 0.098], [16, 0.678, 10.316, 0.097], [17, 0.643, 10.453, 0.096], [18, 0.609, 10.584, 0.095], [19, 0.575, 10.712, 0.094], 
-            [20, 0.542, 10.835, 0.093], [21, 0.51, 10.956, 0.093], [22, 0.477, 11.075, 0.092], [23, 0.446, 11.192, 0.092], [24, 0.415, 11.309, 0.091], 
-            [25, 0.384, 11.424, 0.091], [26, 0.354, 11.539, 0.09], [27, 0.325, 11.652, 0.09], [28, 0.297, 11.764, 0.09], [29, 0.27, 11.875, 0.089], 
-            [30, 0.243, 11.984, 0.089], [31, 0.217, 12.093, 0.089], [32, 0.191, 12.2, 0.089], [33, 0.166, 12.307, 0.088], [34, 0.142, 12.413, 0.088], 
-            [35, 0.118, 12.517, 0.088], [36, 0.095, 12.621, 0.088], [37, 0.073, 12.724, 0.088], [38, 0.051, 12.825, 0.087], [39, 0.03, 12.926, 0.087], 
-            [40, 0.01, 13.026, 0.087], [41, -0.009, 13.124, 0.087], [42, -0.027, 13.222, 0.087], [43, -0.044, 13.319, 0.087], [44, -0.061, 13.415, 0.087], 
-            [45, -0.076, 13.51, 0.087], [46, -0.09, 13.605, 0.087], [47, -0.103, 13.698, 0.087], [48, -0.115, 13.79, 0.087], [49, -0.125, 13.881, 0.088], 
-            [50, -0.134, 13.971, 0.088], [51, -0.141, 14.06, 0.088], [52, -0.146, 14.148, 0.088], [53, -0.149, 14.234, 0.088], [54, -0.151, 14.32, 0.089], 
-            [55, -0.15, 14.404, 0.089], [56, -0.147, 14.487, 0.089], [57, -0.142, 14.568, 0.089], [58, -0.134, 14.648, 0.09], [59, -0.124, 14.727, 0.09], 
-            [60, -0.112, 14.805, 0.09]
+            [20, 0.542, 10.835, 0.093], [21, 0.510, 10.956, 0.093], [22, 0.477, 11.075, 0.092], [23, 0.446, 11.192, 0.092], [24, 0.415, 11.309, 0.091], 
+            [25, 0.384, 11.424, 0.091], [26, 0.354, 11.539, 0.090], [27, 0.325, 11.652, 0.090], [28, 0.297, 11.764, 0.090], [29, 0.270, 11.875, 0.089], 
+            [30, 0.243, 11.984, 0.089], [31, 0.217, 12.093, 0.089], [32, 0.191, 12.200, 0.089], [33, 0.166, 12.307, 0.088], [34, 0.142, 12.413, 0.088], 
+            [35, 0.118, 12.517, 0.088], [36, 0.095, 12.621, 0.088], [37, 0.073, 12.724, 0.088], [38, 0.051, 12.825, 0.087], [39, 0.030, 12.926, 0.087], 
+            [40, 0.010, 13.026, 0.087], [41, -0.009, 13.124, 0.087], [42, -0.027, 13.222, 0.087], [43, -0.044, 13.319, 0.087], [44, -0.061, 13.415, 0.087], 
+            [45, -0.076, 13.510, 0.087], [46, -0.090, 13.605, 0.087], [47, -0.103, 13.698, 0.087], [48, -0.115, 13.790, 0.087], [49, -0.125, 13.881, 0.088], 
+            [50, -0.134, 13.971, 0.088], [51, -0.142, 14.060, 0.088], [52, -0.149, 14.148, 0.088], [53, -0.154, 14.234, 0.088], [54, -0.158, 14.320, 0.089], 
+            [55, -0.160, 14.404, 0.089], [56, -0.161, 14.487, 0.089], [57, -0.160, 14.568, 0.089], [58, -0.157, 14.648, 0.090], [59, -0.153, 14.727, 0.090], 
+            [60, -0.148, 14.805, 0.090]
         ];
 
         // BB/U - Perempuan (WFA Female 0-60m)
         const WFA_F_LMS = [
-            [0, 0.941, 3.23, 0.155], [1, 0.963, 4.225, 0.15], [2, 0.963, 5.176, 0.143], [3, 0.942, 5.952, 0.137], [4, 0.905, 6.551, 0.131], 
-            [5, 0.86, 7.025, 0.126], [6, 0.81, 7.422, 0.122], [7, 0.757, 7.765, 0.118], [8, 0.702, 8.058, 0.114], [9, 0.647, 8.32, 0.111], 
-            [10, 0.592, 8.561, 0.108], [11, 0.537, 8.784, 0.106], [12, 0.483, 8.995, 0.104], [13, 0.43, 9.196, 0.103], [14, 0.379, 9.387, 0.101], 
-            [15, 0.329, 9.57, 0.1], [16, 0.281, 9.746, 0.099], [17, 0.235, 9.916, 0.098], [18, 0.191, 10.08, 0.097], [19, 0.149, 10.24, 0.096], 
-            [20, 0.109, 10.395, 0.095], [21, 0.071, 10.547, 0.095], [22, 0.034, 10.695, 0.094], [23, -0.001, 10.84, 0.093], [24, -0.034, 10.983, 0.093], 
-            [25, -0.066, 11.123, 0.092], [26, -0.096, 11.262, 0.092], [27, -0.125, 11.399, 0.092], [28, -0.152, 11.534, 0.091], [29, -0.178, 11.667, 0.091], 
-            [30, -0.202, 11.799, 0.091], [31, -0.224, 11.93, 0.091], [32, -0.244, 12.059, 0.09], [33, -0.263, 12.187, 0.09], [34, -0.279, 12.313, 0.09], 
-            [35, -0.294, 12.438, 0.09], [36, -0.306, 12.562, 0.09], [37, -0.316, 12.684, 0.09], [38, -0.324, 12.805, 0.09], [39, -0.329, 12.925, 0.09], 
-            [40, -0.332, 13.044, 0.09], [41, -0.332, 13.161, 0.09], [42, -0.33, 13.277, 0.09], [43, -0.325, 13.392, 0.09], [44, -0.318, 13.506, 0.09], 
-            [45, -0.309, 13.619, 0.09], [46, -0.297, 13.73, 0.09], [47, -0.283, 13.84, 0.091], [48, -0.267, 13.948, 0.091], [49, -0.249, 14.055, 0.091], 
-            [50, -0.229, 14.161, 0.091], [51, -0.207, 14.265, 0.091], [52, -0.183, 14.367, 0.091], [53, -0.158, 14.468, 0.091], [54, -0.13, 14.567, 0.091], 
-            [55, -0.101, 14.665, 0.091], [56, -0.07, 14.761, 0.091], [57, -0.038, 14.856, 0.091], [58, -0.005, 14.949, 0.091], [59, 0.029, 15.04, 0.091], 
-            [60, 0.063, 15.131, 0.091]
+            [0, 0.941, 3.230, 0.155], [1, 0.963, 4.225, 0.150], [2, 0.963, 5.176, 0.143], [3, 0.942, 5.952, 0.137], [4, 0.905, 6.551, 0.131], 
+            [5, 0.849, 7.025, 0.126], [6, 0.810, 7.422, 0.122], [7, 0.757, 7.765, 0.118], [8, 0.702, 8.058, 0.114], [9, 0.647, 8.320, 0.111], 
+            [10, 0.592, 8.561, 0.108], [11, 0.537, 8.784, 0.106], [12, 0.483, 8.995, 0.104], [13, 0.430, 9.196, 0.103], [14, 0.379, 9.387, 0.101], 
+            [15, 0.329, 9.570, 0.100], [16, 0.281, 9.746, 0.099], [17, 0.235, 9.916, 0.098], [18, 0.191, 10.080, 0.097], [19, 0.149, 10.240, 0.096], 
+            [20, 0.109, 10.395, 0.095], [21, 0.071, 10.547, 0.095], [22, 0.034, 10.695, 0.094], [23, -0.001, 10.840, 0.093], [24, -0.035, 10.983, 0.093], 
+            [25, -0.068, 11.123, 0.092], [26, -0.100, 11.262, 0.092], [27, -0.130, 11.399, 0.092], [28, -0.158, 11.534, 0.091], [29, -0.185, 11.667, 0.091], 
+            [30, -0.209, 11.799, 0.091], [31, -0.232, 11.930, 0.091], [32, -0.253, 12.059, 0.090], [33, -0.273, 12.187, 0.090], [34, -0.290, 12.313, 0.090], 
+            [35, -0.306, 12.438, 0.090], [36, -0.319, 12.562, 0.090], [37, -0.330, 12.684, 0.090], [38, -0.339, 12.805, 0.090], [39, -0.345, 12.925, 0.090], 
+            [40, -0.349, 13.044, 0.090], [41, -0.350, 13.161, 0.090], [42, -0.349, 13.277, 0.090], [43, -0.345, 13.392, 0.090], [44, -0.339, 13.506, 0.090], 
+            [45, -0.331, 13.619, 0.090], [46, -0.320, 13.730, 0.090], [47, -0.308, 13.840, 0.091], [48, -0.294, 13.948, 0.091], [49, -0.278, 14.055, 0.091], 
+            [50, -0.260, 14.161, 0.091], [51, -0.241, 14.265, 0.091], [52, -0.220, 14.367, 0.091], [53, -0.198, 14.468, 0.091], [54, -0.175, 14.567, 0.091], 
+            [55, -0.150, 14.665, 0.091], [56, -0.125, 14.761, 0.091], [57, -0.098, 14.856, 0.091], [58, -0.071, 14.949, 0.091], [59, -0.043, 15.040, 0.091], 
+            [60, -0.014, 15.131, 0.091]
+        ];
+
+        // TB/U - Laki-laki (HFA Male 0-60m)
+        const HFA_M_LMS_0_60 = [
+            [0, 0.141, 49.988, 0.038], [1, 0.167, 54.729, 0.035], [2, 0.167, 58.423, 0.034], [3, 0.153, 61.353, 0.033], [4, 0.134, 63.673, 0.033], 
+            [5, 0.114, 65.520, 0.033], [6, 0.095, 67.016, 0.033], [7, 0.076, 68.257, 0.033], [8, 0.059, 69.309, 0.034], [9, 0.043, 70.217, 0.034], 
+            [10, 0.029, 71.018, 0.034], [11, 0.016, 71.734, 0.035], [12, 0.005, 72.385, 0.035], [13, -0.004, 72.984, 0.035], [14, -0.013, 73.541, 0.036], 
+            [15, -0.020, 74.062, 0.036], [16, -0.027, 74.551, 0.036], [17, -0.032, 75.013, 0.037], [18, -0.037, 75.452, 0.037], [19, -0.041, 75.871, 0.037], 
+            [20, -0.044, 76.273, 0.038], [21, -0.046, 76.660, 0.038], [22, -0.047, 77.034, 0.038], [23, -0.048, 77.397, 0.038], [24, -0.047, 77.750, 0.039], 
+            [25, -0.047, 78.094, 0.039], [26, -0.045, 78.430, 0.039], [27, -0.043, 78.759, 0.039], [28, -0.040, 79.081, 0.039], [29, -0.037, 79.398, 0.039], 
+            [30, -0.033, 79.709, 0.039], [31, -0.028, 80.015, 0.040], [32, -0.024, 80.316, 0.040], [33, -0.019, 80.613, 0.040], [34, -0.014, 80.906, 0.040], 
+            [35, -0.009, 81.194, 0.040], [36, -0.028, 81.478, 0.040], [37, 0.001, 81.758, 0.040], [38, 0.006, 82.035, 0.040], [39, 0.010, 82.308, 0.040], 
+            [40, 0.014, 82.578, 0.040], [41, 0.018, 82.845, 0.040], [42, 0.021, 83.109, 0.040], [43, 0.024, 83.370, 0.040], [44, 0.026, 83.628, 0.040], 
+            [45, 0.027, 83.883, 0.040], [46, 0.029, 84.135, 0.040], [47, 0.030, 84.385, 0.040], [48, 0.030, 84.632, 0.040], [49, 0.030, 84.876, 0.040], 
+            [50, 0.029, 85.118, 0.040], [51, 0.028, 85.358, 0.040], [52, 0.027, 85.595, 0.040], [53, 0.025, 85.830, 0.040], [54, 0.023, 86.063, 0.040], 
+            [55, 0.020, 86.293, 0.040], [56, 0.017, 86.522, 0.040], [57, 0.014, 86.748, 0.040], [58, 0.010, 86.972, 0.040], [59, 0.006, 87.195, 0.040], 
+            [60, 0.002, 87.416, 0.040]
+        ];
+        
+        // TB/U - Perempuan (HFA Female 0-60m)
+        const HFA_F_LMS_0_60 = [
+            [0, 0.021, 49.255, 0.040], [1, 0.082, 53.681, 0.036], [2, 0.106, 57.112, 0.034], [3, 0.108, 59.789, 0.033], [4, 0.101, 61.884, 0.033], 
+            [5, 0.090, 63.565, 0.033], [6, 0.076, 64.957, 0.033], [7, 0.061, 66.143, 0.034], [8, 0.045, 67.172, 0.034], [9, 0.030, 68.083, 0.034], 
+            [10, 0.016, 68.900, 0.035], [11, 0.003, 69.643, 0.035], [12, -0.009, 70.325, 0.036], [13, -0.020, 70.957, 0.036], [14, -0.030, 71.547, 0.036], 
+            [15, -0.039, 72.102, 0.037], [16, -0.046, 72.627, 0.037], [17, -0.053, 73.125, 0.037], [18, -0.058, 73.600, 0.038], [19, -0.062, 74.053, 0.038], 
+            [20, -0.066, 74.486, 0.038], [21, -0.068, 74.901, 0.039], [22, -0.069, 75.300, 0.039], [23, -0.070, 75.684, 0.039], [24, -0.070, 76.054, 0.039], 
+            [25, -0.069, 76.411, 0.039], [26, -0.068, 76.756, 0.039], [27, -0.066, 77.090, 0.040], [28, -0.064, 77.414, 0.040], [29, -0.061, 77.728, 0.040], 
+            [30, -0.058, 78.032, 0.040], [31, -0.054, 78.328, 0.040], [32, -0.050, 78.614, 0.040], [33, -0.045, 78.892, 0.040], [34, -0.040, 79.161, 0.040], 
+            [35, -0.034, 79.423, 0.040], [36, -0.028, 79.677, 0.040], [37, -0.021, 79.924, 0.040], [38, -0.014, 80.165, 0.040], [39, -0.007, 80.398, 0.040], 
+            [40, 0.000, 80.626, 0.040], [41, 0.007, 80.847, 0.040], [42, 0.013, 81.062, 0.040], [43, 0.019, 81.272, 0.040], [44, 0.025, 81.477, 0.040], 
+            [45, 0.031, 81.677, 0.040], [46, 0.036, 81.872, 0.040], [47, 0.041, 82.063, 0.040], [48, 0.045, 82.250, 0.040], [49, 0.049, 82.433, 0.040], 
+            [50, 0.052, 82.612, 0.040], [51, 0.054, 82.787, 0.040], [52, 0.057, 82.959, 0.040], [53, 0.058, 83.128, 0.040], [54, 0.060, 83.294, 0.040], 
+            [55, 0.060, 83.457, 0.040], [56, 0.061, 83.618, 0.040], [57, 0.060, 83.776, 0.040], [58, 0.060, 83.932, 0.040], [59, 0.059, 84.085, 0.040], 
+            [60, 0.057, 84.237, 0.040]
         ];
 
         // BB/TB - Laki-laki (WFL Male 45-110cm)
         const WFL_M_LMS = [
-            [45, 0.385, 2.76, 0.125], [46, 0.354, 2.91, 0.122], [47, 0.323, 3.06, 0.119], [48, 0.292, 3.22, 0.116], [49, 0.262, 3.39, 0.114], 
-            [50, 0.232, 3.56, 0.111], [51, 0.204, 3.73, 0.108], [52, 0.176, 3.91, 0.106], [53, 0.15, 4.09, 0.104], [54, 0.124, 4.27, 0.102], 
-            [55, 0.1, 4.45, 0.1], [56, 0.077, 4.63, 0.098], [57, 0.055, 4.81, 0.096], [58, 0.034, 4.99, 0.095], [59, 0.015, 5.17, 0.093], 
-            [60, -0.003, 5.35, 0.092], [61, -0.019, 5.53, 0.091], [62, -0.034, 5.7, 0.09], [63, -0.048, 5.88, 0.089], [64, -0.06, 6.05, 0.088], 
-            [65, -0.071, 6.22, 0.087], [66, -0.081, 6.39, 0.087], [67, -0.09, 6.55, 0.086], [68, -0.097, 6.72, 0.085], [69, -0.104, 6.88, 0.085], 
-            [70, -0.109, 7.04, 0.084], [71, -0.114, 7.2, 0.084], [72, -0.118, 7.36, 0.084], [73, -0.122, 7.52, 0.083], [74, -0.124, 7.67, 0.083], 
-            [75, -0.126, 7.83, 0.083], [76, -0.128, 7.98, 0.083], [77, -0.13, 8.14, 0.083], [78, -0.13, 8.29, 0.083], [79, -0.13, 8.45, 0.083], 
-            [80, -0.13, 8.6, 0.083], [81, -0.129, 8.76, 0.083], [82, -0.128, 8.91, 0.083], [83, -0.126, 9.07, 0.083], [84, -0.124, 9.22, 0.083], 
-            [85, -0.122, 9.38, 0.083], [86, -0.12, 9.53, 0.084], [87, -0.116, 9.68, 0.084], [88, -0.112, 9.84, 0.084], [89, -0.108, 9.99, 0.084], 
-            [90, -0.104, 10.15, 0.084], [91, -0.099, 10.3, 0.084], [92, -0.094, 10.46, 0.084], [93, -0.088, 10.61, 0.084], [94, -0.082, 10.76, 0.085], 
-            [95, -0.076, 10.92, 0.085], [96, -0.07, 11.07, 0.085], [97, -0.063, 11.23, 0.085], [98, -0.056, 11.38, 0.085], [99, -0.048, 11.54, 0.086], 
-            [100, -0.041, 11.69, 0.086], [101, -0.033, 11.85, 0.086], [102, -0.024, 12.0, 0.086], [103, -0.015, 12.16, 0.087], [104, -0.006, 12.31, 0.087], 
-            [105, 0.003, 12.47, 0.087], [106, 0.012, 12.63, 0.088], [107, 0.022, 12.78, 0.088], [108, 0.032, 12.94, 0.088], [109, 0.043, 13.09, 0.089], 
-            [110, 0.054, 13.25, 0.089]
-        ];
-
-        // BB/TB - Perempuan (WFL Female 45-110cm)
-        const WFL_F_LMS = [
-            [45, 0.207, 2.58, 0.125], [46, 0.187, 2.73, 0.123], [47, 0.168, 2.87, 0.12], [48, 0.15, 3.02, 0.118], [49, 0.133, 3.18, 0.115], 
-            [50, 0.117, 3.33, 0.113], [51, 0.102, 3.49, 0.111], [52, 0.089, 3.65, 0.109], [53, 0.077, 3.81, 0.107], [54, 0.066, 3.97, 0.105], 
-            [55, 0.056, 4.13, 0.103], [56, 0.048, 4.28, 0.101], [57, 0.04, 4.44, 0.099], [58, 0.034, 4.59, 0.098], [59, 0.028, 4.75, 0.096], 
-            [60, 0.024, 4.9, 0.095], [61, 0.021, 5.05, 0.093], [62, 0.018, 5.2, 0.092], [63, 0.017, 5.35, 0.091], [64, 0.016, 5.5, 0.09], 
-            [65, 0.016, 5.65, 0.089], [66, 0.017, 5.79, 0.088], [67, 0.018, 5.94, 0.088], [68, 0.02, 6.08, 0.087], [69, 0.022, 6.22, 0.086], 
-            [70, 0.025, 6.36, 0.086], [71, 0.028, 6.5, 0.085], [72, 0.032, 6.63, 0.085], [73, 0.035, 6.77, 0.084], [74, 0.038, 6.9, 0.084], 
-            [75, 0.041, 7.03, 0.083], [76, 0.044, 7.16, 0.083], [77, 0.047, 7.29, 0.083], [78, 0.049, 7.42, 0.083], [79, 0.051, 7.55, 0.083], 
-            [80, 0.053, 7.68, 0.083], [81, 0.055, 7.81, 0.083], [82, 0.056, 7.94, 0.083], [83, 0.057, 8.07, 0.083], [84, 0.057, 8.2, 0.083], 
-            [85, 0.057, 8.33, 0.084], [86, 0.056, 8.46, 0.084], [87, 0.055, 8.59, 0.084], [88, 0.053, 8.72, 0.084], [89, 0.051, 8.85, 0.084], 
-            [90, 0.048, 8.98, 0.084], [91, 0.045, 9.11, 0.085], [92, 0.042, 9.24, 0.085], [93, 0.038, 9.37, 0.085], [94, 0.034, 9.5, 0.085], 
-            [95, 0.029, 9.63, 0.086], [96, 0.024, 9.76, 0.086], [97, 0.019, 9.89, 0.086], [98, 0.013, 10.02, 0.086], [99, 0.007, 10.15, 0.087], 
-            [100, 0.001, 10.28, 0.087], [101, -0.006, 10.41, 0.087], [102, -0.013, 10.54, 0.088], [103, -0.02, 10.67, 0.088], [104, -0.028, 10.8, 0.088], 
-            [105, -0.035, 10.93, 0.088], [106, -0.043, 11.06, 0.089], [107, -0.051, 11.19, 0.089], [108, -0.059, 11.32, 0.089], [109, -0.067, 11.45, 0.089], 
-            [110, -0.076, 11.58, 0.09]
+            [45.0, 0.280, 2.756, 0.176], [45.5, 0.280, 2.859, 0.174], [46.0, 0.280, 2.964, 0.172], [46.5, 0.280, 3.072, 0.170], [47.0, 0.280, 3.181, 0.169],
+            [47.5, 0.280, 3.292, 0.167], [48.0, 0.280, 3.404, 0.165], [48.5, 0.280, 3.517, 0.163], [49.0, 0.280, 3.631, 0.162], [49.5, 0.280, 3.746, 0.160],
+            [50.0, 0.280, 3.861, 0.158], [50.5, 0.280, 3.977, 0.157], [51.0, 0.280, 4.094, 0.155], [51.5, 0.280, 4.212, 0.154], [52.0, 0.280, 4.330, 0.152],
+            [52.5, 0.280, 4.449, 0.151], [53.0, 0.280, 4.568, 0.149], [53.5, 0.280, 4.688, 0.148], [54.0, 0.280, 4.809, 0.147], [54.5, 0.280, 4.930, 0.145],
+            [55.0, 0.280, 5.051, 0.144], [55.5, 0.280, 5.174, 0.143], [56.0, 0.280, 5.297, 0.142], [56.5, 0.280, 5.420, 0.141], [57.0, 0.280, 5.544, 0.140],
+            [57.5, 0.279, 5.669, 0.139], [58.0, 0.279, 5.794, 0.138], [58.5, 0.278, 5.920, 0.137], [59.0, 0.278, 6.046, 0.136], [59.5, 0.277, 6.173, 0.135],
+            [60.0, 0.277, 6.301, 0.135], [60.5, 0.276, 6.429, 0.134], [61.0, 0.276, 6.558, 0.133], [61.5, 0.275, 6.688, 0.133], [62.0, 0.275, 6.818, 0.132],
+            [62.5, 0.274, 6.949, 0.132], [63.0, 0.274, 7.081, 0.131], [63.5, 0.273, 7.213, 0.131], [64.0, 0.273, 7.346, 0.130], [64.5, 0.272, 7.479, 0.130],
+            [65.0, 0.272, 7.613, 0.129], [65.5, 0.271, 7.747, 0.129], [66.0, 0.271, 7.882, 0.129], [66.5, 0.270, 8.017, 0.128], [67.0, 0.270, 8.153, 0.128],
+            [67.5, 0.269, 8.289, 0.128], [68.0, 0.269, 8.426, 0.127], [68.5, 0.268, 8.563, 0.127], [69.0, 0.268, 8.701, 0.127], [69.5, 0.267, 8.839, 0.127],
+            [70.0, 0.267, 8.977, 0.126], [70.5, 0.266, 9.116, 0.126], [71.0, 0.266, 9.255, 0.126], [71.5, 0.266, 9.395, 0.126], [72.0, 0.265, 9.535, 0.126],
+            [72.5, 0.265, 9.675, 0.126], [73.0, 0.265, 9.816, 0.126], [73.5, 0.264, 9.957, 0.126], [74.0, 0.264, 10.098, 0.126], [74.5, 0.264, 10.239, 0.126],
+            [75.0, 0.264, 10.381, 0.126], [75.5, 0.263, 10.523, 0.126], [76.0, 0.263, 10.665, 0.126], [76.5, 0.263, 10.808, 0.126], [77.0, 0.263, 10.950, 0.127],
+            [77.5, 0.263, 11.093, 0.127], [78.0, 0.263, 11.236, 0.127], [78.5, 0.263, 11.379, 0.127], [79.0, 0.263, 11.523, 0.127], [79.5, 0.263, 11.666, 0.127],
+            [80.0, 0.263, 11.810, 0.128], [80.5, 0.263, 11.954, 0.128], [81.0, 0.264, 12.098, 0.128], [81.5, 0.264, 12.242, 0.128], [82.0, 0.264, 12.387, 0.129],
+            [82.5, 0.265, 12.532, 0.129], [83.0, 0.265, 12.677, 0.129], [83.5, 0.266, 12.822, 0.129], [84.0, 0.266, 12.968, 0.130], [84.5, 0.267, 13.113, 0.130],
+            [85.0, 0.267, 13.259, 0.130], [85.5, 0.268, 13.406, 0.131], [86.0, 0.269, 13.552, 0.131], [86.5, 0.270, 13.699, 0.132], [87.0, 0.270, 13.846, 0.132],
+            [87.5, 0.271, 13.993, 0.133], [88.0, 0.272, 14.140, 0.133], [88.5, 0.273, 14.288, 0.134], [89.0, 0.274, 14.436, 0.134], [89.5, 0.275, 14.584, 0.135],
+            [90.0, 0.276, 14.732, 0.135], [90.5, 0.277, 14.880, 0.136], [91.0, 0.278, 15.029, 0.136], [91.5, 0.279, 15.178, 0.137], [92.0, 0.280, 15.328, 0.137],
+            [92.5, 0.281, 15.478, 0.138], [93.0, 0.282, 15.628, 0.138], [93.5, 0.283, 15.779, 0.139], [94.0, 0.284, 15.930, 0.139], [94.5, 0.285, 16.081, 0.140],
+            [95.0, 0.286, 16.233, 0.140], [95.5, 0.287, 16.385, 0.141], [96.0, 0.288, 16.537, 0.141], [96.5, 0.289, 16.690, 0.142], [97.0, 0.290, 16.843, 0.142],
+            [97.5, 0.291, 16.997, 0.143], [98.0, 0.292, 17.151, 0.143], [98.5, 0.293, 17.306, 0.144], [99.0, 0.294, 17.460, 0.144], [99.5, 0.295, 17.616, 0.145],
+            [100.0, 0.296, 17.771, 0.145], [100.5, 0.297, 17.928, 0.146], [101.0, 0.298, 18.084, 0.146], [101.5, 0.299, 18.241, 0.147], [102.0, 0.300, 18.399, 0.147],
+            [102.5, 0.301, 18.557, 0.148], [103.0, 0.302, 18.716, 0.148], [103.5, 0.303, 18.875, 0.149], [104.0, 0.304, 19.035, 0.149], [104.5, 0.305, 19.195, 0.150],
+            [105.0, 0.306, 19.356, 0.150], [105.5, 0.307, 19.518, 0.151], [106.0, 0.308, 19.680, 0.151], [106.5, 0.309, 19.843, 0.152], [107.0, 0.310, 20.006, 0.152],
+            [107.5, 0.311, 20.170, 0.153], [108.0, 0.312, 20.334, 0.153], [108.5, 0.313, 20.500, 0.154], [109.0, 0.314, 20.665, 0.154], [109.5, 0.315, 20.832, 0.155],
+            [110.0, 0.316, 20.999, 0.155]
         ];
         
-        // TB/U - Laki-laki (HFA Male 0-60m)
-        const HFA_M_LMS_0_60 = [
-            [0, 0.141, 49.988, 0.038], [1, 0.167, 54.729, 0.035], [2, 0.167, 58.423, 0.034], [3, 0.153, 61.353, 0.033], [4, 0.134, 63.673, 0.033], 
-            [5, 0.114, 65.52, 0.033], [6, 0.095, 67.016, 0.033], [7, 0.076, 68.257, 0.033], [8, 0.059, 69.309, 0.034], [9, 0.043, 70.217, 0.034], 
-            [10, 0.029, 71.018, 0.034], [11, 0.016, 71.734, 0.035], [12, 0.005, 72.385, 0.035], [13, -0.004, 72.984, 0.035], [14, -0.013, 73.541, 0.036], 
-            [15, -0.02, 74.062, 0.036], [16, -0.027, 74.551, 0.036], [17, -0.032, 75.013, 0.037], [18, -0.037, 75.452, 0.037], [19, -0.041, 75.871, 0.037], 
-            [20, -0.044, 76.273, 0.038], [21, -0.046, 76.66, 0.038], [22, -0.047, 77.034, 0.038], [23, -0.048, 77.397, 0.038], [24, -0.047, 77.75, 0.039], 
-            [25, -0.047, 78.094, 0.039], [26, -0.045, 78.43, 0.039], [27, -0.043, 78.759, 0.039], [28, -0.04, 79.081, 0.039], [29, -0.037, 79.398, 0.039], 
-            [30, -0.033, 79.709, 0.039], [31, -0.028, 80.015, 0.04], [32, -0.024, 80.316, 0.04], [33, -0.019, 80.613, 0.04], [34, -0.014, 80.906, 0.04], 
-            [35, -0.009, 81.194, 0.04], [36, -0.004, 81.478, 0.04], [37, 0.001, 81.758, 0.04], [38, 0.006, 82.035, 0.04], [39, 0.01, 82.308, 0.04], 
-            [40, 0.014, 82.578, 0.04], [41, 0.018, 82.845, 0.04], [42, 0.021, 83.109, 0.04], [43, 0.024, 83.37, 0.04], [44, 0.026, 83.628, 0.04], 
-            [45, 0.027, 83.883, 0.04], [46, 0.029, 84.135, 0.04], [47, 0.03, 84.385, 0.04], [48, 0.03, 84.632, 0.04], [49, 0.03, 84.876, 0.04], 
-            [50, 0.029, 85.118, 0.04], [51, 0.028, 85.358, 0.04], [52, 0.027, 85.595, 0.04], [53, 0.025, 85.83, 0.04], [54, 0.023, 86.063, 0.04], 
-            [55, 0.02, 86.293, 0.04], [56, 0.017, 86.522, 0.04], [57, 0.014, 86.748, 0.04], [58, 0.01, 86.972, 0.04], [59, 0.006, 87.195, 0.04], 
-            [60, 0.002, 87.416, 0.04]
-        ];
-
-        // TB/U - Perempuan (HFA Female 0-60m)
-        const HFA_F_LMS_0_60 = [
-            [0, 0.021, 49.255, 0.04], [1, 0.082, 53.681, 0.036], [2, 0.106, 57.112, 0.034], [3, 0.108, 59.789, 0.033], [4, 0.101, 61.884, 0.033], 
-            [5, 0.09, 63.565, 0.033], [6, 0.076, 64.957, 0.033], [7, 0.061, 66.143, 0.034], [8, 0.045, 67.172, 0.034], [9, 0.03, 68.083, 0.034], 
-            [10, 0.016, 68.9, 0.035], [11, 0.003, 69.643, 0.035], [12, -0.009, 70.325, 0.036], [13, -0.02, 70.957, 0.036], [14, -0.03, 71.547, 0.036], 
-            [15, -0.039, 72.102, 0.037], [16, -0.046, 72.627, 0.037], [17, -0.053, 73.125, 0.037], [18, -0.058, 73.6, 0.038], [19, -0.062, 74.053, 0.038], 
-            [20, -0.066, 74.486, 0.038], [21, -0.068, 74.901, 0.039], [22, -0.069, 75.3, 0.039], [23, -0.07, 75.684, 0.039], [24, -0.07, 76.054, 0.039], 
-            [25, -0.069, 76.411, 0.039], [26, -0.068, 76.756, 0.039], [27, -0.066, 77.09, 0.04], [28, -0.064, 77.414, 0.04], [29, -0.061, 77.728, 0.04], 
-            [30, -0.058, 78.034, 0.04], [31, -0.054, 78.331, 0.04], [32, -0.05, 78.62, 0.04], [33, -0.045, 78.902, 0.04], [34, -0.04, 79.177, 0.04], 
-            [35, -0.035, 79.445, 0.04], [36, -0.03, 79.707, 0.04], [37, -0.024, 79.963, 0.04], [38, -0.018, 80.213, 0.04], [39, -0.013, 80.458, 0.04], 
-            [40, -0.007, 80.697, 0.04], [41, -0.001, 80.932, 0.04], [42, 0.004, 81.162, 0.04], [43, 0.009, 81.387, 0.04], [44, 0.014, 81.608, 0.04], 
-            [45, 0.018, 81.825, 0.04], [46, 0.022, 82.038, 0.04], [47, 0.026, 82.247, 0.04], [48, 0.029, 82.453, 0.04], [49, 0.031, 82.655, 0.04], 
-            [50, 0.033, 82.854, 0.04], [51, 0.034, 83.05, 0.04], [52, 0.035, 83.243, 0.04], [53, 0.035, 83.433, 0.04], [54, 0.035, 83.621, 0.04], 
-            [55, 0.034, 83.805, 0.04], [56, 0.033, 83.987, 0.04], [57, 0.031, 84.167, 0.04], [58, 0.029, 84.344, 0.04], [59, 0.026, 84.519, 0.04], 
-            [60, 0.023, 84.692, 0.04]
+        // BB/TB - Perempuan (WFL Female 45-110cm)
+        const WFL_F_LMS = [
+            [45.0, 0.187, 2.625, 0.187], [45.5, 0.187, 2.723, 0.186], [46.0, 0.187, 2.822, 0.184], [46.5, 0.187, 2.924, 0.182], [47.0, 0.187, 3.028, 0.181],
+            [47.5, 0.187, 3.133, 0.179], [48.0, 0.187, 3.240, 0.178], [48.5, 0.187, 3.349, 0.176], [49.0, 0.187, 3.459, 0.175], [49.5, 0.187, 3.571, 0.174],
+            [50.0, 0.187, 3.684, 0.173], [50.5, 0.187, 3.799, 0.171], [51.0, 0.187, 3.914, 0.170], [51.5, 0.187, 4.031, 0.169], [52.0, 0.187, 4.149, 0.168],
+            [52.5, 0.187, 4.268, 0.167], [53.0, 0.187, 4.388, 0.166], [53.5, 0.187, 4.509, 0.165], [54.0, 0.187, 4.631, 0.164], [54.5, 0.187, 4.754, 0.163],
+            [55.0, 0.187, 4.878, 0.162], [55.5, 0.187, 5.003, 0.161], [56.0, 0.187, 5.129, 0.160], [56.5, 0.187, 5.256, 0.159], [57.0, 0.187, 5.384, 0.158],
+            [57.5, 0.186, 5.513, 0.158], [58.0, 0.186, 5.642, 0.157], [58.5, 0.186, 5.773, 0.156], [59.0, 0.186, 5.904, 0.156], [59.5, 0.186, 6.037, 0.155],
+            [60.0, 0.186, 6.170, 0.154], [60.5, 0.186, 6.304, 0.154], [61.0, 0.186, 6.439, 0.153], [61.5, 0.186, 6.575, 0.153], [62.0, 0.186, 6.712, 0.152],
+            [62.5, 0.186, 6.849, 0.152], [63.0, 0.186, 6.988, 0.151], [63.5, 0.186, 7.127, 0.151], [64.0, 0.186, 7.268, 0.151], [64.5, 0.186, 7.409, 0.150],
+            [65.0, 0.186, 7.551, 0.150], [65.5, 0.186, 7.694, 0.150], [66.0, 0.186, 7.838, 0.150], [66.5, 0.186, 7.983, 0.150], [67.0, 0.186, 8.128, 0.150],
+            [67.5, 0.186, 8.275, 0.150], [68.0, 0.186, 8.422, 0.150], [68.5, 0.186, 8.571, 0.150], [69.0, 0.186, 8.720, 0.150], [69.5, 0.186, 8.870, 0.150],
+            [70.0, 0.186, 9.020, 0.151], [70.5, 0.186, 9.172, 0.151], [71.0, 0.186, 9.324, 0.151], [71.5, 0.186, 9.477, 0.151], [72.0, 0.186, 9.631, 0.152],
+            [72.5, 0.186, 9.786, 0.152], [73.0, 0.186, 9.941, 0.152], [73.5, 0.186, 10.098, 0.152], [74.0, 0.186, 10.255, 0.153], [74.5, 0.186, 10.413, 0.153],
+            [75.0, 0.186, 10.572, 0.153], [75.5, 0.186, 10.732, 0.153], [76.0, 0.186, 10.892, 0.154], [76.5, 0.186, 11.053, 0.154], [77.0, 0.186, 11.215, 0.154],
+            [77.5, 0.187, 11.378, 0.155], [78.0, 0.187, 11.541, 0.155], [78.5, 0.187, 11.706, 0.155], [79.0, 0.187, 11.871, 0.156], [79.5, 0.187, 12.037, 0.156],
+            [80.0, 0.188, 12.204, 0.156], [80.5, 0.188, 12.371, 0.157], [81.0, 0.189, 12.539, 0.157], [81.5, 0.189, 12.709, 0.158], [82.0, 0.190, 12.879, 0.158],
+            [82.5, 0.191, 13.050, 0.159], [83.0, 0.192, 13.222, 0.159], [83.5, 0.193, 13.395, 0.160], [84.0, 0.194, 13.568, 0.160], [84.5, 0.195, 13.743, 0.161],
+            [85.0, 0.196, 13.918, 0.161], [85.5, 0.197, 14.095, 0.162], [86.0, 0.198, 14.272, 0.162], [86.5, 0.199, 14.450, 0.163], [87.0, 0.200, 14.629, 0.164],
+            [87.5, 0.201, 14.809, 0.164], [88.0, 0.202, 14.990, 0.165], [88.5, 0.203, 15.172, 0.165], [89.0, 0.204, 15.355, 0.166], [89.5, 0.205, 15.539, 0.166],
+            [90.0, 0.207, 15.723, 0.167], [90.5, 0.208, 15.909, 0.168], [91.0, 0.209, 16.096, 0.168], [91.5, 0.210, 16.283, 0.169], [92.0, 0.211, 16.472, 0.169],
+            [92.5, 0.213, 16.662, 0.170], [93.0, 0.214, 16.853, 0.170], [93.5, 0.215, 17.045, 0.171], [94.0, 0.217, 17.238, 0.172], [94.5, 0.218, 17.432, 0.172],
+            [95.0, 0.219, 17.627, 0.173], [95.5, 0.221, 17.823, 0.173], [96.0, 0.222, 18.020, 0.174], [96.5, 0.224, 18.219, 0.174], [97.0, 0.225, 18.418, 0.175],
+            [97.5, 0.227, 18.619, 0.176], [98.0, 0.228, 18.820, 0.176], [98.5, 0.230, 19.023, 0.177], [99.0, 0.231, 19.227, 0.177], [99.5, 0.233, 19.433, 0.178],
+            [100.0, 0.235, 19.639, 0.179], [100.5, 0.236, 19.847, 0.179], [101.0, 0.238, 20.055, 0.180], [101.5, 0.240, 20.265, 0.180], [102.0, 0.241, 20.476, 0.181],
+            [102.5, 0.243, 20.688, 0.182], [103.0, 0.245, 20.901, 0.182], [103.5, 0.246, 21.115, 0.183], [104.0, 0.248, 21.331, 0.183], [104.5, 0.250, 21.547, 0.184],
+            [105.0, 0.252, 21.765, 0.185], [105.5, 0.253, 21.984, 0.185], [106.0, 0.255, 22.204, 0.186], [106.5, 0.257, 22.425, 0.186], [107.0, 0.259, 22.648, 0.187],
+            [107.5, 0.261, 22.871, 0.188], [108.0, 0.263, 23.097, 0.188], [108.5, 0.264, 23.323, 0.189], [109.0, 0.266, 23.551, 0.189], [109.5, 0.268, 23.781, 0.190],
+            [110.0, 0.270, 24.011, 0.191]
         ];
 
         // IMT/U - Laki-laki (BFA Male 0-60m)
         const BFA_M_LMS_0_60 = [
-            [0, 1.157, 13.523, 0.109], [1, 0.825, 15.109, 0.103], [2, 0.612, 16.216, 0.099], [3, 0.443, 16.947, 0.096], [4, 0.315, 17.38, 0.093], 
-            [5, 0.22, 17.584, 0.091], [6, 0.149, 17.61, 0.089], [7, 0.094, 17.5, 0.087], [8, 0.051, 17.291, 0.086], [9, 0.017, 17.022, 0.085], 
-            [10, -0.008, 16.717, 0.084], [11, -0.027, 16.393, 0.083], [12, -0.042, 16.064, 0.083], [13, -0.055, 15.741, 0.082], [14, -0.067, 15.433, 0.082], 
-            [15, -0.078, 15.143, 0.082], [16, -0.088, 14.872, 0.082], [17, -0.098, 14.62, 0.082], [18, -0.108, 14.385, 0.082], [19, -0.117, 14.167, 0.082], 
-            [20, -0.126, 13.965, 0.083], [21, -0.134, 13.777, 0.083], [22, -0.142, 13.601, 0.083], [23, -0.149, 13.438, 0.083], [24, -0.156, 13.284, 0.084], 
-            [25, -0.162, 13.14, 0.084], [26, -0.168, 13.004, 0.084], [27, -0.174, 12.875, 0.084], [28, -0.179, 12.753, 0.085], [29, -0.183, 12.637, 0.085], 
-            [30, -0.187, 12.527, 0.085], [31, -0.19, 12.423, 0.086], [32, -0.193, 12.323, 0.086], [33, -0.195, 12.228, 0.086], [34, -0.196, 12.138, 0.086], 
-            [35, -0.196, 12.053, 0.087], [36, -0.195, 11.972, 0.087], [37, -0.194, 11.895, 0.087], [38, -0.191, 11.822, 0.087], [39, -0.187, 11.753, 0.087], 
-            [40, -0.182, 11.687, 0.088], [41, -0.177, 11.625, 0.088], [42, -0.17, 11.566, 0.088], [43, -0.163, 11.511, 0.088], [44, -0.155, 11.458, 0.088], 
-            [45, -0.146, 11.409, 0.088], [46, -0.137, 11.363, 0.089], [47, -0.127, 11.319, 0.089], [48, -0.116, 11.278, 0.089], [49, -0.104, 11.24, 0.089], 
-            [50, -0.092, 11.204, 0.089], [51, -0.079, 11.171, 0.09], [52, -0.065, 11.141, 0.09], [53, -0.05, 11.113, 0.09], [54, -0.035, 11.087, 0.09], 
-            [55, -0.019, 11.064, 0.091], [56, -0.003, 11.042, 0.091], [57, 0.013, 11.023, 0.091], [58, 0.03, 11.006, 0.091], [59, 0.047, 10.991, 0.092], 
-            [60, 0.064, 10.978, 0.092]
+            [0, 0.697, 13.565, 0.106], [1, 0.732, 15.341, 0.096], [2, 0.724, 16.510, 0.092], [3, 0.701, 17.203, 0.090], [4, 0.668, 17.587, 0.089], 
+            [5, 0.627, 17.765, 0.089], [6, 0.584, 17.828, 0.088], [7, 0.539, 17.826, 0.088], [8, 0.493, 17.788, 0.087], [9, 0.447, 17.725, 0.087], 
+            [10, 0.401, 17.643, 0.087], [11, 0.355, 17.551, 0.086], [12, 0.309, 17.452, 0.086], [13, 0.264, 17.351, 0.086], [14, 0.220, 17.250, 0.086], 
+            [15, 0.177, 17.150, 0.086], [16, 0.136, 17.051, 0.086], [17, 0.096, 16.955, 0.086], [18, 0.058, 16.862, 0.086], [19, 0.021, 16.772, 0.086], 
+            [20, -0.013, 16.685, 0.086], [21, -0.045, 16.602, 0.086], [22, -0.076, 16.522, 0.086], [23, -0.104, 16.446, 0.086], [24, -0.131, 16.373, 0.086], 
+            [25, -0.155, 16.304, 0.087], [26, -0.178, 16.239, 0.087], [27, -0.198, 16.178, 0.087], [28, -0.217, 16.120, 0.087], [29, -0.233, 16.066, 0.087], 
+            [30, -0.248, 16.015, 0.087], [31, -0.260, 15.967, 0.088], [32, -0.270, 15.923, 0.088], [33, -0.279, 15.882, 0.088], [34, -0.285, 15.844, 0.088], 
+            [35, -0.290, 15.808, 0.089], [36, -0.293, 15.776, 0.089], [37, -0.294, 15.746, 0.089], [38, -0.293, 15.719, 0.089], [39, -0.290, 15.695, 0.089], 
+            [40, -0.286, 15.673, 0.090], [41, -0.280, 15.653, 0.090], [42, -0.273, 15.636, 0.090], [43, -0.264, 15.621, 0.090], [44, -0.254, 15.608, 0.090], 
+            [45, -0.298, 14.511, 0.085], [46, -0.277, 14.492, 0.085], [47, -0.255, 14.475, 0.086], [48, -0.232, 14.461, 0.086], [49, -0.208, 14.449, 0.086], 
+            [50, -0.183, 14.438, 0.086], [51, -0.158, 14.430, 0.086], [52, -0.132, 14.423, 0.087], [53, -0.105, 14.419, 0.087], [54, -0.078, 14.417, 0.087], 
+            [55, -0.051, 14.416, 0.087], [56, -0.023, 14.417, 0.087], [57, 0.005, 14.420, 0.088], [58, 0.033, 14.424, 0.088], [59, 0.062, 14.430, 0.088], 
+            [60, 0.091, 14.438, 0.088]
         ];
 
         // IMT/U - Perempuan (BFA Female 0-60m)
         const BFA_F_LMS_0_60 = [
-            [0, 0.959, 13.069, 0.111], [1, 0.655, 14.394, 0.105], [2, 0.457, 15.353, 0.101], [3, 0.313, 15.992, 0.098], [4, 0.207, 16.368, 0.096], 
-            [5, 0.129, 16.54, 0.094], [6, 0.071, 16.559, 0.092], [7, 0.026, 16.467, 0.091], [8, -0.007, 16.299, 0.089], [9, -0.034, 16.082, 0.088], 
-            [10, -0.054, 15.836, 0.087], [11, -0.07, 15.577, 0.086], [12, -0.083, 15.316, 0.085], [13, -0.093, 15.061, 0.084], [14, -0.102, 14.814, 0.084], 
-            [15, -0.109, 14.577, 0.083], [16, -0.115, 14.35, 0.083], [17, -0.12, 14.131, 0.082], [18, -0.124, 13.92, 0.082], [19, -0.128, 13.717, 0.082], 
-            [20, -0.13, 13.521, 0.082], [21, -0.132, 13.332, 0.082], [22, -0.133, 13.15, 0.082], [23, -0.133, 12.975, 0.082], [24, -0.133, 12.805, 0.082], 
-            [25, -0.133, 12.641, 0.082], [26, -0.131, 12.483, 0.082], [27, -0.13, 12.33, 0.083], [28, -0.127, 12.181, 0.083], [29, -0.124, 12.037, 0.083], 
-            [30, -0.12, 11.898, 0.083], [31, -0.116, 11.763, 0.084], [32, -0.111, 11.632, 0.084], [33, -0.105, 11.505, 0.084], [34, -0.098, 11.382, 0.084], 
-            [35, -0.09, 11.264, 0.085], [36, -0.082, 11.149, 0.085], [37, -0.073, 11.038, 0.085], [38, -0.063, 10.931, 0.085], [39, -0.053, 10.827, 0.086], 
-            [40, -0.042, 10.727, 0.086], [41, -0.031, 10.63, 0.086], [42, -0.019, 10.537, 0.086], [43, -0.007, 10.447, 0.087], [44, 0.006, 10.36, 0.087], 
-            [45, 0.018, 10.276, 0.087], [46, 0.03, 10.195, 0.087], [47, 0.043, 10.117, 0.087], [48, 0.056, 10.042, 0.088], [49, 0.07, 9.97, 0.088], 
-            [50, 0.084, 9.9, 0.088], [51, 0.098, 9.833, 0.088], [52, 0.113, 9.769, 0.089], [53, 0.129, 9.708, 0.089], [54, 0.145, 9.649, 0.089], 
-            [55, 0.162, 9.593, 0.089], [56, 0.18, 9.539, 0.09], [57, 0.198, 9.488, 0.09], [58, 0.217, 9.439, 0.09], [59, 0.237, 9.393, 0.09], 
-            [60, 0.258, 9.349, 0.091]
+            [0, 0.584, 13.060, 0.108], [1, 0.635, 14.545, 0.099], [2, 0.630, 15.510, 0.093], [3, 0.601, 16.037, 0.090], [4, 0.553, 16.311, 0.088], 
+            [5, 0.495, 16.425, 0.087], [6, 0.433, 16.452, 0.086], [7, 0.369, 16.442, 0.085], [8, 0.306, 16.415, 0.084], [9, 0.244, 16.376, 0.084], 
+            [10, 0.184, 16.328, 0.083], [11, 0.126, 16.273, 0.083], [12, 0.069, 16.213, 0.083], [13, 0.015, 16.149, 0.083], [14, -0.038, 16.082, 0.082], 
+            [15, -0.087, 16.014, 0.082], [16, -0.133, 15.944, 0.082], [17, -0.176, 15.874, 0.082], [18, -0.216, 15.803, 0.082], [19, -0.252, 15.733, 0.082], 
+            [20, -0.286, 15.663, 0.082], [21, -0.317, 15.594, 0.082], [22, -0.344, 15.526, 0.082], [23, -0.368, 15.460, 0.082], [24, -0.390, 15.394, 0.082], 
+            [25, -0.408, 15.331, 0.082], [26, -0.424, 15.269, 0.082], [27, -0.437, 15.210, 0.082], [28, -0.447, 15.152, 0.082], [29, -0.455, 15.097, 0.082], 
+            [30, -0.460, 15.044, 0.083], [31, -0.463, 14.994, 0.083], [32, -0.463, 14.945, 0.083], [33, -0.461, 14.899, 0.083], [34, -0.457, 14.855, 0.083], 
+            [35, -0.450, 14.814, 0.083], [36, -0.442, 14.774, 0.083], [37, -0.431, 14.737, 0.084], [38, -0.419, 14.701, 0.084], [39, -0.405, 14.668, 0.084], 
+            [40, -0.390, 14.637, 0.084], [41, -0.374, 14.607, 0.084], [42, -0.357, 14.580, 0.085], [43, -0.338, 14.555, 0.085], [44, -0.319, 14.532, 0.085], 
+            [45, -0.298, 14.511, 0.085], [46, -0.277, 14.492, 0.085], [47, -0.255, 14.475, 0.086], [48, -0.232, 14.461, 0.086], [49, -0.208, 14.449, 0.086], 
+            [50, -0.183, 14.438, 0.086], [51, -0.158, 14.430, 0.086], [52, -0.132, 14.423, 0.087], [53, -0.105, 14.419, 0.087], [54, -0.078, 14.417, 0.087], 
+            [55, -0.051, 14.416, 0.087], [56, -0.023, 14.417, 0.087], [57, 0.005, 14.420, 0.088], [58, 0.033, 14.424, 0.088], [59, 0.062, 14.430, 0.088], 
+            [60, 0.091, 14.438, 0.088]
         ];
 
-        // --- DATA WHO 5-19 TAHUN (WHO REFERENCE 5-19 YEARS) ---
+        // --- DATA LMS WHO REFERENCE 5-19 TAHUN (Interpolasi berdasarkan tabel WHO) ---
+        // Poin data TB/U (HFA) Male 61-228m
+        const HFA_M_LMS_61_228_POINTS = [
+            [60, 0.002, 114.6, 0.040], [72, -0.016, 120.3, 0.042], [84, -0.027, 125.4, 0.045], [96, -0.035, 130.3, 0.047], 
+            [108, -0.041, 135.2, 0.049], [120, -0.046, 140.0, 0.051], [132, -0.050, 145.0, 0.052], [144, -0.053, 150.1, 0.053], 
+            [156, -0.055, 155.0, 0.053], [168, -0.057, 160.0, 0.053], [180, -0.058, 165.0, 0.052], [192, -0.059, 168.9, 0.051],
+            [204, -0.060, 171.6, 0.050], [216, -0.061, 173.4, 0.049], [228, -0.062, 174.4, 0.048]
+        ];
         
-        // HFA Male 60-228m Anchors (Points from WHO Reference 5-19 years table)
-        const HFA_M_ANCHORS = [
-            [60, 0.002, 87.416, 0.04], 
-            [66, 0.0, 90.62, 0.039], [72, 0.0, 93.43, 0.039], [84, 0.0, 98.37, 0.039], [96, 0.0, 103.11, 0.0385],
-            [108, 0.0, 107.56, 0.038], [120, 0.0, 111.45, 0.038], [132, 0.0, 115.35, 0.0375], [144, 0.0, 120.3, 0.0375],
-            [156, 0.0, 128.5, 0.037], [168, 0.0, 140.0, 0.037], [180, 0.0, 153.2, 0.0368], [192, 0.0, 163.5, 0.0367],
-            [204, 0.0, 170.8, 0.0366], [216, 0.0, 174.9, 0.0366], [228, 0.0, 176.80, 0.0366] 
+        // Poin data TB/U (HFA) Female 61-228m
+        const HFA_F_LMS_61_228_POINTS = [
+            [60, 0.057, 113.6, 0.040], [72, 0.040, 119.3, 0.042], [84, 0.028, 124.3, 0.044], [96, 0.021, 129.2, 0.046], 
+            [108, 0.017, 134.1, 0.048], [120, 0.014, 139.0, 0.050], [132, 0.011, 143.9, 0.051], [144, 0.008, 148.8, 0.051], 
+            [156, 0.005, 152.7, 0.051], [168, 0.003, 155.1, 0.050], [180, 0.000, 156.4, 0.049], [192, -0.001, 157.0, 0.048],
+            [204, -0.002, 157.3, 0.047], [216, -0.003, 157.4, 0.046], [228, -0.004, 157.4, 0.045]
         ];
-        const HFA_M_EXT_5_19 = interpolateLMS(HFA_M_ANCHORS).filter(row => row[0] > 60);
-        // TB/U - Laki-laki (0-228m) 
-        let HFA_M_LMS_EXT = HFA_M_LMS_0_60.filter(row => row[0] <= 60).concat(HFA_M_EXT_5_19);
-
-        // HFA Female 60-228m Anchors
-        const HFA_F_ANCHORS = [
-            [60, 0.023, 84.692, 0.04], 
-            [66, 0.0, 87.6, 0.039], [72, 0.0, 90.17, 0.039], [84, 0.0, 95.0, 0.039], [96, 0.0, 99.8, 0.0385],
-            [108, 0.0, 104.5, 0.038], [120, 0.0, 108.8, 0.038], [132, 0.0, 113.1, 0.0375], [144, 0.0, 117.3, 0.0375],
-            [156, 0.0, 120.8, 0.037], [168, 0.0, 123.5, 0.037], [180, 0.0, 124.9, 0.037], [192, 0.0, 126.3, 0.037],
-            [204, 0.0, 128.0, 0.0375], [216, 0.0, 131.0, 0.0375], [228, 0.0, 163.64, 0.0375] // Using ~163.64cm as max adult height reference
-        ];
-        const HFA_F_EXT_5_19 = interpolateLMS(HFA_F_ANCHORS).filter(row => row[0] > 60);
-        // TB/U - Perempuan (0-228m) 
-        let HFA_F_LMS_EXT = HFA_F_LMS_0_60.filter(row => row[0] <= 60).concat(HFA_F_EXT_5_19);
-
-
-        // BFA Male 60-228m Anchors (Points from WHO Reference 5-19 years table)
-        const BFA_M_ANCHORS = [
-            [60, 0.064, 10.978, 0.092], 
-            [66, 0.09, 11.23, 0.09], [72, 0.12, 11.5, 0.089], [84, 0.18, 12.06, 0.086], [96, 0.23, 12.63, 0.084],
-            [108, 0.27, 13.15, 0.082], [120, 0.3, 13.51, 0.081], [132, 0.35, 14.2, 0.08], [144, 0.45, 15.2, 0.08],
-            [156, 0.55, 16.5, 0.085], [168, 0.65, 17.8, 0.09], [180, 0.8, 19.1, 0.095], [192, 0.9, 20.2, 0.1],
-            [204, 0.95, 21.0, 0.101], [216, 0.96, 21.4, 0.102], [228, 0.97, 21.60, 0.102] 
-        ];
-        const BFA_M_EXT_5_19 = interpolateLMS(BFA_M_ANCHORS).filter(row => row[0] > 60);
-        // IMT/U - Laki-laki (0-228m) 
-        let BFA_M_LMS_EXT = BFA_M_LMS_0_60.filter(row => row[0] <= 60).concat(BFA_M_EXT_5_19);
-
-        // BFA Female 60-228m Anchors
-        const BFA_F_ANCHORS = [
-            [60, 0.258, 9.349, 0.091], 
-            [66, 0.28, 9.6, 0.089], [72, 0.31, 9.9, 0.088], [84, 0.37, 10.6, 0.085], [96, 0.45, 11.5, 0.08],
-            [108, 0.52, 12.5, 0.075], [120, 0.6, 13.8, 0.07], [132, 0.65, 15.0, 0.075], [144, 0.7, 16.5, 0.08],
-            [156, 0.75, 18.0, 0.085], [168, 0.8, 19.5, 0.09], [180, 0.9, 20.8, 0.10], [192, 0.93, 21.2, 0.105],
-            [204, 0.95, 21.4, 0.11], [216, 0.96, 21.5, 0.11], [228, 0.97, 21.57, 0.111] 
-        ];
-        const BFA_F_EXT_5_19 = interpolateLMS(BFA_F_ANCHORS).filter(row => row[0] > 60);
-        // IMT/U - Perempuan (0-228m) 
-        let BFA_F_LMS_EXT = BFA_F_LMS_0_60.filter(row => row[0] <= 60).concat(BFA_F_EXT_5_19);
-
-
-        // Struktur data untuk memetakan indeks ke tabel LMS
-        const LMS_DATA = {
-            'male': { 
-                WFA: { data: WFA_M_LMS, keyType: 'age', unit: 'kg', label: 'Berat Badan per Usia (BB/U)', range: '0-60 Bulan' },
-                HFA: { data: HFA_M_LMS_EXT, keyType: 'age', unit: 'cm', label: 'Tinggi Badan per Usia (TB/U)', range: '0-228 Bulan' },    
-                WFL: { data: WFL_M_LMS, keyType: 'height', unit: 'kg', label: 'Berat Badan per Tinggi Badan (BB/TB)', range: '45-110 cm' },
-                BFA: { data: BFA_M_LMS_EXT, keyType: 'age', unit: 'IMT', label: 'IMT per Usia (IMT/U)', range: '0-228 Bulan' }              
-            },
-            'female': {
-                WFA: { data: WFA_F_LMS, keyType: 'age', unit: 'kg', label: 'Berat Badan per Usia (BB/U)', range: '0-60 Bulan' },
-                HFA: { data: HFA_F_LMS_EXT, keyType: 'age', unit: 'cm', label: 'Tinggi Badan per Usia (TB/U)', range: '0-228 Bulan' },
-                WFL: { data: WFL_F_LMS, keyType: 'height', unit: 'kg', label: 'Berat Badan per Tinggi Badan (BB/TB)', range: '45-110 cm' },
-                BFA: { data: BFA_F_LMS_EXT, keyType: 'age', unit: 'IMT', label: 'IMT per Usia (IMT/U)', range: '0-228 Bulan' }
-            }
-        };
-
-        // --- FUNGSI KALKULASI USIA ---
         
-        function dateToISO(date) {
-            const y = date.getFullYear();
-            const m = String(date.getMonth() + 1).padStart(2, '0');
-            const d = String(date.getDate()).padStart(2, '0');
-            return `${y}-${m}-${d}`;
-        }
+        // Poin data IMT/U (BFA) Male 61-228m
+        const BFA_M_LMS_61_228_POINTS = [
+            [60, 0.016, 15.68, 0.094], [72, -0.049, 15.93, 0.096], [84, -0.099, 16.20, 0.099], [96, -0.137, 16.51, 0.103],
+            [108, -0.165, 16.89, 0.108], [120, -0.179, 17.34, 0.114], [132, -0.175, 17.84, 0.121], [144, -0.149, 18.42, 0.129],
+            [156, -0.096, 19.10, 0.138], [168, -0.011, 19.86, 0.148], [180, 0.113, 20.67, 0.160], [192, 0.231, 21.46, 0.173],
+            [204, 0.329, 22.14, 0.187], [216, 0.401, 22.66, 0.201], [228, 0.435, 22.95, 0.216]
+        ];
         
-        function formatDateID(date) {
-             return date.toLocaleDateString('id-ID', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-        }
-
-        /** Usia desimal untuk LMS lookup (Presisi WHO: 30.4375 hari/bulan) */
-        function getDecimalAgeInMonths(dobString) {
-            const today = new Date();
-            const birthDate = new Date(dobString);
-            if (isNaN(birthDate.getTime()) || birthDate > today) return null;
-            const diffTime = today.getTime() - birthDate.getTime();
-            const diffDays = diffTime / (1000 * 60 * 60 * 24);
-            const averageDaysInMonth = 30.4375; 
-            return diffDays / averageDaysInMonth;
-        }
-        
-        /** Usia kalender untuk tampilan (Bulan dan Hari) */
-        function getCalendarAgeDisplay(dobString) {
-            const today = new Date();
-            const birthDate = new Date(dobString);
-            if (isNaN(birthDate.getTime()) || birthDate > today) return null;
-
-            let years = today.getFullYear() - birthDate.getFullYear();
-            let months = today.getMonth() - birthDate.getMonth();
-            let days = today.getDate() - birthDate.getDate();
-
-            if (days < 0) {
-                months--;
-                days += new Date(today.getFullYear(), today.getMonth(), 0).getDate(); 
-            }
-
-            if (months < 0) {
-                years--;
-                months += 12;
-            }
-            
-            const totalMonths = years * 12 + months;
-            const remainingDays = days;
-            
-            return { totalMonths, remainingDays };
-        }
+        // Poin data IMT/U (BFA) Female 61-228m
+        const BFA_F_LMS_61_228_POINTS = [
+            [60, 0.091, 14.44, 0.088], [72, 0.026, 14.88, 0.090], [84, -0.023, 15.39, 0.094], [96, -0.052, 15.97, 0.098],
+            [108, -0.052, 16.63, 0.105], [120, -0.017, 17.33, 0.112], [132, 0.053, 18.06, 0.120], [144, 0.150, 18.78, 0.129],
+            [156, 0.264, 19.45, 0.139], [168, 0.380, 20.03, 0.150], [180, 0.490, 20.51, 0.162], [192, 0.587, 20.89, 0.174],
+            [204, 0.659, 21.14, 0.186], [216, 0.706, 21.28, 0.199], [228, 0.729, 21.34, 0.212]
+        ];
 
 
-        // --- FUNGSI UTILITY Z-SCORE ---
-
-        /** Mengambil nilai L, M, S dari data tabel. */
-        function getLMSValues(sex, index, age, height) {
-            const indexData = LMS_DATA[sex][index];
-            const dataTable = indexData.data;
-            const keyType = indexData.keyType;
-
-            let lookupKey;
-            
-            if (keyType === 'age') {
-                lookupKey = Math.floor(age); 
-                // Batas 228 bulan (19 tahun)
-                if (lookupKey > MAX_AGE_MONTHS) return null; 
-            } else if (keyType === 'height') {
-                lookupKey = Math.round(height); 
-                // WFL hanya berlaku 45-110cm
-                if (lookupKey < 45 || lookupKey > 110) return null; 
+        // --- FUNGSI AKORDION (GLOBAL) ---
+        window.toggleAccordion = function(contentId, iconId) {
+            const content = document.getElementById(contentId);
+            const icon = document.getElementById(iconId);
+            if (content.style.maxHeight === '0px' || !content.style.maxHeight) {
+                // Buka akordion
+                content.style.maxHeight = content.scrollHeight + "px";
+                icon.classList.add('rotate-180');
             } else {
+                // Tutup akordion
+                content.style.maxHeight = '0px';
+                icon.classList.remove('rotate-180');
+            }
+        }
+        // --- END FUNGSI AKORDION ---
+        
+        // --- FUNGSI INTERPOLASI CUBIC SPLINE (untuk 61-228m) ---
+        // Fungsi untuk menghitung LMS pada usia/tinggi tertentu menggunakan data LMS yang disediakan
+        function interpolateLMS(dataPoints, x) {
+            let p1, p2;
+
+            // Kasus 1: Nilai x berada di luar batas (ekstrapolasi)
+            if (x < dataPoints[0][0]) {
+                p1 = dataPoints[0];
+                p2 = dataPoints[1];
+            } else if (x > dataPoints[dataPoints.length - 1][0]) {
+                p1 = dataPoints[dataPoints.length - 2];
+                p2 = dataPoints[dataPoints.length - 1];
+            } else {
+                // Kasus 2: Nilai x berada di dalam batas (interpolasi linier)
+                for (let i = 0; i < dataPoints.length - 1; i++) {
+                    if (x >= dataPoints[i][0] && x <= dataPoints[i + 1][0]) {
+                        p1 = dataPoints[i];
+                        p2 = dataPoints[i + 1];
+                        break;
+                    }
+                }
+            }
+
+            if (!p1 || !p2) {
+                // Jika data point tidak ditemukan (seharusnya tidak terjadi jika batas sudah dicek)
+                return { L: 0, M: 0, S: 0 }; 
+            }
+
+            const x1 = p1[0];
+            const L1 = p1[1], M1 = p1[2], S1 = p1[3];
+            const x2 = p2[0];
+            const L2 = p2[1], M2 = p2[2], S2 = p2[3];
+
+            if (x1 === x2) return { L: L1, M: M1, S: S1 };
+
+            const ratio = (x - x1) / (x2 - x1);
+
+            const L = L1 + (L2 - L1) * ratio;
+            const M = M1 + (M2 - M1) * ratio;
+            const S = S1 + (S2 - S1) * ratio;
+
+            return { L, M, S };
+        }
+
+        // --- PENGGABUNGAN DATA LMS 0-228m ---
+        
+        let HFA_M_LMS_EXT = HFA_M_LMS_0_60;
+        let HFA_F_LMS_EXT = HFA_F_LMS_0_60;
+        let BFA_M_LMS_EXT = BFA_M_LMS_0_60;
+        let BFA_F_LMS_EXT = BFA_F_LMS_0_60;
+
+        // Tambahkan data 61-228m (WHO Reference) menggunakan interpolasi
+        function generateExtendedLMS(data60, dataPoints) {
+            let extendedData = [...data60];
+            for (let m = 61; m <= MAX_AGE_MONTHS; m++) {
+                const { L, M, S } = interpolateLMS(dataPoints, m);
+                extendedData.push([m, L, M, S]);
+            }
+            return extendedData;
+        }
+
+        HFA_M_LMS_EXT = generateExtendedLMS(HFA_M_LMS_0_60, HFA_M_LMS_61_228_POINTS);
+        HFA_F_LMS_EXT = generateExtendedLMS(HFA_F_LMS_0_60, HFA_F_LMS_61_228_POINTS);
+        BFA_M_LMS_EXT = generateExtendedLMS(BFA_M_LMS_0_60, BFA_M_LMS_61_228_POINTS);
+        BFA_F_LMS_EXT = generateExtendedLMS(BFA_F_LMS_0_60, BFA_F_LMS_61_228_POINTS);
+
+
+        // --- UTILITY Z-SCORE DAN KLASIFIKASI ---
+
+        /** Menghitung Z-score menggunakan metode LMS. */
+        function calculateZScore(measurement, L, M, S) {
+            if (L === 0) {
+                // Rumus untuk L = 0 (Normal Distribution)
+                return (Math.log(measurement / M)) / S;
+            } else {
+                // Rumus untuk L != 0 (Box-Cox Transformation)
+                return (Math.pow(measurement / M, L) - 1) / (L * S);
+            }
+        }
+
+        /** Mendapatkan klasifikasi status gizi berdasarkan Z-score. */
+        function getClassification(zScore, index) {
+            if (zScore === 'N/A' || typeof zScore !== 'number') return { classification: 'N/A', color: 'bg-gray-100' };
+
+            let classification = 'Normal';
+            let color = 'bg-success';
+
+            if (index === 'WFA' || index === 'WFL' || index === 'BFA') { // BB/U, BB/TB, IMT/U
+                if (zScore < -3) { classification = 'Sangat Kurang/Gizi Buruk'; color = 'bg-danger'; }
+                else if (zScore < -2) { classification = 'Kurang/Gizi Kurang'; color = 'bg-warning'; }
+                else if (zScore > 3) { classification = 'Obesitas'; color = 'bg-danger'; }
+                else if (zScore > 2) { classification = 'Gizi Lebih/Gemuk'; color = 'bg-warning'; }
+                else if (zScore > 1) { classification = 'Risiko Gizi Lebih'; color = 'bg-info'; }
+            } else if (index === 'HFA') { // TB/U (Stunting)
+                if (zScore < -3) { classification = 'Sangat Pendek (Severe Stunting)'; color = 'bg-danger'; }
+                else if (zScore < -2) { classification = 'Pendek (Stunting)'; color = 'bg-warning'; }
+                else if (zScore > 3) { classification = 'Tinggi'; color = 'bg-info'; }
+            }
+            return { classification, color };
+        }
+        
+        /** Mengambil nilai L, M, S dari tabel LMS berdasarkan usia/tinggi. */
+        function getLMS(index, sex, ageMonths, heightCm) {
+            let data = [];
+            let xValue; 
+            let key;
+
+            // 1. Tentukan set data yang akan digunakan
+            if (index === 'WFA' || index === 'HFA' || index === 'BFA') {
+                xValue = Math.floor(ageMonths);
+                key = `${index}_${sex}_${xValue}`;
+                if (sex === 'male') {
+                    if (index === 'WFA') data = WFA_M_LMS;
+                    else if (index === 'HFA') data = HFA_M_LMS_EXT;
+                    else if (index === 'BFA') data = BFA_M_LMS_EXT;
+                } else {
+                    if (index === 'WFA') data = WFA_F_LMS;
+                    else if (index === 'HFA') data = HFA_F_LMS_EXT;
+                    else if (index === 'BFA') data = BFA_F_LMS_EXT;
+                }
+                
+                // Cek batas usia
+                if ((index === 'WFA' || index === 'WFL') && ageMonths > 60) {
+                    return null; // BB/U dan BB/TB tidak berlaku > 60 bulan
+                }
+                if (ageMonths > MAX_AGE_MONTHS) {
+                    return null; // Indeks berbasis usia tidak berlaku > 228 bulan
+                }
+
+            } else if (index === 'WFL') { // BB/TB
+                xValue = Math.round(heightCm * 2) / 2; // Pembulatan ke 0.5cm terdekat
+                key = `${index}_${sex}_${xValue}`;
+                if (sex === 'male') data = WFL_M_LMS;
+                else data = WFL_F_LMS;
+
+                // Cek batas tinggi/panjang (WHO 0-5 tahun menggunakan batas 45-110cm)
+                if (heightCm < 45 || heightCm > 110 || ageMonths > 60) {
+                     return null; 
+                }
+            }
+
+            // Cek cache (opsional, untuk optimasi)
+            if (window.lmsDataCache[key]) {
+                return window.lmsDataCache[key];
+            }
+            
+            // 2. Cari data di tabel (Linear Interpolation)
+            // Cari data di tabel (menggunakan floor untuk umur bulanan atau round untuk tinggi/panjang)
+            const row = data.find(r => r[0] === xValue);
+
+            if (row) {
+                const result = { L: row[1], M: row[2], S: row[3] };
+                window.lmsDataCache[key] = result;
+                return result;
+            }
+
+            // Jika tidak ditemukan dalam tabel (misalnya, interpolasi untuk usia 61-228 sudah dilakukan di HFA_M_LMS_EXT, dst)
+            // Untuk WFL (45-110), jika tidak ditemukan, berarti out of range
+            return null;
+        }
+
+        // --- FUNGSI UTAMA KALKULASI ---
+
+        /** Menghitung usia anak dari tanggal lahir ke tanggal hari ini. */
+        function calculateAge(dobString) {
+            const dob = new Date(dobString);
+            const now = new Date();
+
+            if (isNaN(dob.getTime())) {
                 return null;
             }
 
-            const lmsRow = dataTable.find(row => row[0] === lookupKey);
-            return lmsRow ? { L: lmsRow[1], M: lmsRow[2], S: lmsRow[3] } : null;
-        }
+            // Hitung selisih total hari
+            const diffTime = Math.abs(now - dob);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-        /** Menghitung Z-score menggunakan Formula LMS WHO. */
-        function calculateLMSZScore(X, L, M, S) {
-            if (S === 0) return 0; // Avoid division by zero
-            if (L === 0) {
-                return Math.log(X / M) / S;
-            } else {
-                return (Math.pow(X / M, L) - 1) / (L * S);
+            // Hitung Bulan dan Hari untuk display
+            const years = now.getFullYear() - dob.getFullYear();
+            const months = now.getMonth() - dob.getMonth() + (years * 12);
+
+            let day = now.getDate() - dob.getDate();
+            let preciseMonths = months;
+
+            if (day < 0) {
+                // Sesuaikan bulan dan hari (misalnya dari 10 Maret ke 10 April = 1 bulan, 0 hari)
+                const lastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+                day += lastMonth.getDate();
+                preciseMonths -= 1;
             }
-        }
 
-        /** Mengembalikan klasifikasi WHO dan kelas warna berdasarkan Z-score. */
-        function classifyStatus(zScore, index) {
-            let status = 'Di luar Batas Normal';
-            let colorClass = 'bg-gray-400';
+            // Hitung usia desimal (WHO-NCHS menggunakan usia desimal terdekat ke 0.01)
+            const daysInMonth = (new Date(now.getFullYear(), now.getMonth() + 1, 0)).getDate();
+            const decimalMonths = preciseMonths + (day / daysInMonth);
             
-            if (index === 'HFA' || index === 'WFA') { 
-                if (zScore < -3) {
-                    status = index === 'HFA' ? 'Sangat Pendek (Severe Stunting)' : 'Gizi Buruk (Severely Underweight)';
-                    colorClass = 'bg-danger'; 
-                } else if (zScore >= -3 && zScore < -2) {
-                    status = index === 'HFA' ? 'Pendek (Stunting)' : 'Gizi Kurang (Underweight)';
-                    colorClass = 'bg-warning'; 
-                } else if (zScore >= -2 && zScore <= 2) {
-                    status = 'Gizi Baik (Normal)';
-                    colorClass = 'bg-success'; 
-                } else { 
-                    status = 'Tinggi/Berisiko Tinggi (Possible Risk)';
-                    colorClass = 'bg-info'; 
-                }
-            } 
-            else if (index === 'WFL' || index === 'BFA') { 
-                if (zScore < -3) {
-                    status = 'Gizi Sangat Kurus (Severe Wasting)';
-                    colorClass = 'bg-danger';
-                } else if (zScore >= -3 && zScore < -2) {
-                    status = 'Gizi Kurus (Wasting)';
-                    colorClass = 'bg-warning';
-                } else if (zScore >= -2 && zScore <= 1) { 
-                    status = 'Gizi Baik (Normal)';
-                    colorClass = 'bg-success';
-                } else if (zScore > 1 && zScore <= 2) { 
-                    status = 'Risiko Gizi Lebih (Possible Risk)';
-                    colorClass = 'bg-info';
-                } else if (zScore > 2 && zScore <= 3) { 
-                    status = 'Gizi Lebih (Overweight)';
-                    colorClass = 'bg-info';
-                } else { 
-                    status = 'Obesitas (Obese)';
-                    colorClass = 'bg-danger'; 
+            // Menghitung bulan dan hari sisa yang ditampilkan
+            const displayMonths = Math.floor(decimalMonths);
+            const displayDays = Math.round((decimalMonths - displayMonths) * 30.4375); // Rata-rata hari per bulan
+
+            return {
+                totalMonths: parseFloat(decimalMonths.toFixed(2)),
+                display: `${displayMonths} bulan ${displayDays} hari`
+            };
+        }
+
+        /** Fungsi utama yang dipanggil saat ada perubahan input. */
+        window.calculateNutritionStatus = function() {
+            window.hideDeleteModal(); // Pastikan konfirmasi hapus dibatalkan
+            
+            const formData = window.getFormData();
+            const dobString = formData.dob;
+            const sex = formData.sex;
+            const weight = formData.weight;
+            const height = formData.height;
+            
+            const ageDisplay = document.getElementById('age-display');
+            const resultsGrid = document.getElementById('results-grid');
+            const messageBox = document.getElementById('message-box');
+            
+            // Reset UI dan Validasi Awal
+            resultsGrid.innerHTML = '';
+            window.currentZScoreResults = {};
+            if (ageDisplay) {
+                ageDisplay.textContent = 'Data Tidak Valid';
+            }
+            let valid = true;
+            let displayWarning = false;
+
+            // Pengecekan Input Dasar
+            if (!formData.name || !dobString || isNaN(weight) || weight <= 0 || isNaN(height) || height <= 0) {
+                displayWarning = true;
+                valid = false;
+            }
+            
+            const ageResult = calculateAge(dobString);
+            if (!ageResult) {
+                displayWarning = true;
+                valid = false;
+            } else {
+                currentAgeMonths = ageResult.totalMonths;
+                if (ageDisplay) {
+                    ageDisplay.textContent = ageResult.display;
                 }
             }
-            return { status, colorClass };
+
+            if (!valid || currentAgeMonths > MAX_AGE_MONTHS) {
+                if (currentAgeMonths > MAX_AGE_MONTHS) {
+                    messageBox.innerHTML = `<span class="text-red-800">PERINGATAN: Usia maksimum yang didukung adalah ${MAX_AGE_MONTHS} bulan (19 tahun).</span>`;
+                    messageBox.className = 'p-3 text-sm bg-red-100 border-l-4 border-danger rounded-lg';
+                } else if (displayWarning) {
+                    messageBox.innerHTML = '<span class="text-red-800">PERINGATAN: Pastikan semua data antropometri (termasuk Tanggal Lahir yang valid) sudah terisi.</span>';
+                    messageBox.className = 'p-3 text-sm bg-red-100 border-l-4 border-danger rounded-lg';
+                }
+                
+                window.currentZScoreResults = {}; 
+                window.updateVisualization();
+                return; 
+            }
+
+            // Array Indeks untuk dihitung
+            const indexes = ['WFA', 'HFA', 'WFL', 'BFA'];
+            const results = {};
+            let allNA = true;
+
+            indexes.forEach(index => {
+                const lms = getLMS(index, sex, currentAgeMonths, height);
+                let zScore = 'N/A';
+                let rawLMS = { L: 'N/A', M: 'N/A', S: 'N/A' };
+
+                if (lms) {
+                    try {
+                        let measurement = (index === 'BFA') ? (weight / (height / 100) ** 2) : (index === 'WFL' ? weight : (index === 'WFA' ? weight : height));
+                        zScore = calculateZScore(measurement, lms.L, lms.M, lms.S);
+                        rawLMS = lms;
+                        allNA = false;
+                    } catch (e) {
+                        zScore = 'N/A';
+                    }
+                }
+                
+                const { classification, color } = getClassification(zScore, index);
+                
+                results[index] = {
+                    index: index,
+                    title: getIndexTitle(index),
+                    zScore: zScore,
+                    classification: classification,
+                    color: color,
+                    rawLMS: rawLMS
+                };
+            });
+
+            window.currentZScoreResults = results;
+            renderResults(results);
+            window.updateVisualization(); // Update visualization after calculation
+
+            // Reset pesan ke default jika perhitungan berhasil
+            if (!allNA && messageBox.className !== 'confirmation-delete-container') {
+                messageBox.innerHTML = 'Masukkan data antropometri anak (Nama, TTL, BB, TB/PB) untuk memulai perhitungan status gizi.';
+                messageBox.className = 'p-3 text-sm text-green-800 bg-green-100 border-l-4 border-success rounded-lg';
+            }
         }
-        
+
+        /** Mendapatkan judul indeks yang ramah pengguna. */
+        function getIndexTitle(index) {
+            switch (index) {
+                case 'WFA': return 'Berat Badan per Usia (BB/U)';
+                case 'HFA': return 'Tinggi/Panjang Badan per Usia (TB/U)';
+                case 'WFL': return 'Berat Badan per Tinggi/Panjang Badan (BB/TB)';
+                case 'BFA': return 'IMT per Usia (IMT/U)';
+                default: return index;
+            }
+        }
+
+        /** Merender kartu hasil status gizi. */
+        function renderResults(results) {
+            const resultsGrid = document.getElementById('results-grid');
+            resultsGrid.innerHTML = '';
+            
+            for (const index in results) {
+                const res = results[index];
+                const zScoreDisplay = res.zScore === 'N/A' ? 'N/A' : res.zScore.toFixed(2);
+                
+                const card = document.createElement('div');
+                const bgColor = res.color.replace('bg-', 'bg-');
+                card.className = `card-result rounded-lg ${bgColor} text-secondary border border-gray-200`;
+                
+                // Menghapus bagian L, M, S dan garis pemisah
+                card.innerHTML = `
+                    <h4 class="font-bold text-center">${res.title}</h4>
+                    <div class="mt-1 text-center">
+                        <p class="text-lg font-extrabold text-secondary">${zScoreDisplay}</p>
+                        <p class="text-xs font-semibold mt-1 p-1 rounded-md bg-white/70">${res.classification}</p>
+                    </div>
+                `;
+                resultsGrid.appendChild(card);
+            }
+            
+            // Setelah merender, pastikan akordion Ringkasan Klasifikasi menyesuaikan tingginya jika terbuka
+            const accordionContent = document.getElementById('accordion-content-summary');
+            if (accordionContent.style.maxHeight !== '0px') {
+                accordionContent.style.maxHeight = accordionContent.scrollHeight + "px";
+            }
+        }
+
         // --- FUNGSI VISUALISASI CANVAS ---
 
-        let currentZScoreResults = {}; // Store all results for visualization update
-
-        function drawZScoreVisualization(index) {
+        window.updateVisualization = function() {
             const canvas = document.getElementById('zscore-canvas');
             const ctx = canvas.getContext('2d');
-            
-            // Atur ukuran canvas agar sesuai dengan container (untuk responsivitas)
-            const dpr = window.devicePixelRatio || 1;
-            const rect = canvas.parentNode.getBoundingClientRect();
-            const width = rect.width;
-            const height = 300;
+            const index = document.getElementById('visualization-index').value;
+            const results = window.currentZScoreResults[index];
+            const sex = document.getElementById('sex').value;
+            const zScoreLabel = document.getElementById('zscore-label');
 
-            canvas.width = width * dpr;
-            canvas.height = height * dpr;
-            ctx.scale(dpr, dpr);
-
-            const zScoreData = currentZScoreResults[index];
-            const zScore = zScoreData ? parseFloat(zScoreData.zScore) : NaN;
-            const status = zScoreData ? zScoreData.status : 'N/A';
-            const color = zScoreData ? zScoreData.colorClass.replace('bg-', '#') : '#9ca3af';
-
-            const padding = 20;
-            const plotArea = {
-                x: padding, 
-                y: padding, 
-                width: width - 2 * padding, 
-                height: height - 2 * padding
-            };
-            
-            // Rentang Z-score yang ditampilkan (Biasanya -4 SD hingga +4 SD)
-            const minZ = -4.0;
-            const maxZ = 4.0;
-            const zRange = maxZ - minZ;
+            const width = canvas.width;
+            const height = canvas.height;
 
             ctx.clearRect(0, 0, width, height);
 
-            // 1. Gambar Garis SD dan Zona Warna
-            const sdLines = [-3, -2, -1, 0, 1, 2, 3];
-            const zToY = (z) => plotArea.y + plotArea.height - ((z - minZ) / zRange) * plotArea.height;
-
-            ctx.font = '10px Inter';
-            ctx.textAlign = 'right';
-
-            sdLines.forEach(sd => {
-                const y = zToY(sd);
-                
-                // Teks SD
-                ctx.fillStyle = (sd === 0) ? '#059669' : '#4b5563';
-                ctx.fillText(`${sd} SD`, plotArea.x - 5, y + 3);
-
-                // Garis
-                ctx.beginPath();
-                ctx.moveTo(plotArea.x, y);
-                ctx.lineTo(plotArea.x + plotArea.width, y);
-                ctx.lineWidth = (sd === 0) ? 2 : 1;
-                ctx.strokeStyle = (sd === 0) ? '#059669' : '#9ca3af';
-                ctx.stroke();
-            });
-            
-            // 2. Plot Titik Hasil Z-score
-            if (!isNaN(zScore) && zScore >= minZ && zScore <= maxZ) {
-                const yPos = zToY(zScore);
-                const xPos = plotArea.x + plotArea.width / 2; // Titik di tengah
-                
-                // Titik
-                ctx.beginPath();
-                ctx.arc(xPos, yPos, 8, 0, 2 * Math.PI);
-                ctx.fillStyle = color;
-                ctx.fill();
-                
-                // Border/Garis Luar
-                ctx.strokeStyle = '#fff';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-
-                // 3. Tampilkan Nilai Z-score dan Status
-                document.getElementById('zscore-label').textContent = `${zScore.toFixed(2)} SD (${status})`;
-                
-                ctx.textAlign = 'left';
-                ctx.fillStyle = '#1f2937';
-                ctx.font = '14px Inter bold';
-                ctx.fillText(`Hasil: ${zScore.toFixed(2)} SD`, plotArea.x + plotArea.width / 2 + 15, yPos + 5);
-
-            } else {
-                document.getElementById('zscore-label').textContent = 'Z-score: N/A (Data di luar batas kurva)';
+            if (!results || results.zScore === 'N/A') {
+                zScoreLabel.textContent = results ? `${results.title}: N/A` : `Pilih Indeks`;
+                ctx.fillStyle = '#f3f4f6'; // Gray-100
+                ctx.fillRect(0, 0, width, height);
+                ctx.fillStyle = '#9ca3af'; // Gray-400
+                ctx.font = '16px Inter';
                 ctx.textAlign = 'center';
-                ctx.fillStyle = '#6b7280';
-                ctx.font = '16px Inter bold';
-                ctx.fillText('Data di luar batas atau tidak valid', width / 2, height / 2);
-            }
-        }
-        
-        /** Mengambil hasil z-score yang sudah ada dan memperbarui visualisasi. */
-        window.updateVisualization = function() {
-            const index = document.getElementById('visualization-index').value;
-            drawZScoreVisualization(index);
-        }
-
-        // --- FUNGSI UTAMA ---
-
-        /** Fungsi utama untuk menghitung semua indeks dan memperbarui tampilan. */
-        window.calculateNutritionStatus = function() {
-            const today = new Date();
-            const dobInput = document.getElementById('dob').value;
-            const sex = document.getElementById('sex').value;
-            const weightInput = document.getElementById('weight').value;
-            const heightInput = document.getElementById('height').value;
-            
-            const ageDisplay = document.getElementById('age-display');
-            const messageBox = document.getElementById('message-box');
-            const resultsGrid = document.getElementById('results-grid');
-
-            // 1. Tampilkan Tanggal Sekarang
-            document.getElementById('current-date-display').textContent = formatDateID(today);
-
-            // Reset UI
-            resultsGrid.innerHTML = '';
-            ageDisplay.textContent = 'Menunggu input...';
-            
-            const weight = parseFloat(weightInput);
-            const height = parseFloat(heightInput);
-
-            // 2. Validasi Input Dasar
-            if (!dobInput || isNaN(weight) || isNaN(height) || weight <= 0 || height <= 0) {
-                // Jangan reset message-box jika pesan datang dari Firebase
-                if (!messageBox.innerHTML.includes("Gagal")) {
-                    messageBox.innerHTML = 'Mohon masukkan Tanggal Lahir, Berat Badan (kg), dan Tinggi Badan (cm) yang valid.';
-                    messageBox.className = 'p-2 text-xs text-red-800 bg-red-100 border-l-4 border-danger rounded-lg';
-                }
-                drawZScoreVisualization('WFA'); // Gambar ulang canvas kosong
+                ctx.fillText('Data Z-score Tidak Tersedia', width / 2, height / 2);
                 return;
             }
 
-            // 3. Hitung Usia
-            const ageDecimal = getDecimalAgeInMonths(dobInput);
-            const ageDisplayData = getCalendarAgeDisplay(dobInput);
-            const age = ageDecimal; // Gunakan ageDecimal untuk lookup LMS
+            const zScore = results.zScore;
+            zScoreLabel.textContent = `${results.title}: Z-score ${zScore.toFixed(2)}`;
 
-            if (age === null || age < 0 || ageDisplayData === null) {
-                 messageBox.innerHTML = 'Tanggal Lahir tidak valid atau melebihi Tanggal Sekarang.';
-                 messageBox.className = 'p-2 text-xs text-red-800 bg-red-100 border-l-4 border-danger rounded-lg';
-                 ageDisplay.textContent = 'Tidak Valid';
-                 drawZScoreVisualization('WFA');
-                 return;
-            }
-
-            // 4. Tampilkan Usia Terhitung dalam format bulan dan hari
-            ageDisplay.textContent = `${ageDisplayData.totalMonths} bulan ${ageDisplayData.remainingDays} hari`;
+            // Konfigurasi Visualisasi
+            const minZ = -4; // Z-score minimum yang ditampilkan
+            const maxZ = 4;  // Z-score maksimum yang ditampilkan
+            const zRange = maxZ - minZ;
             
-            let generalMessage = 'Perhitungan WHO 0-60 bulan (akurat, Child Growth Standards). 61-228 bulan (akurat, WHO Reference 5-19 years).';
-            messageBox.className = 'p-2 text-xs text-green-800 bg-green-100 border-l-4 border-success rounded-lg';
+            const padding = 30;
+            const chartWidth = width - 2 * padding;
+            const chartHeight = height - 2 * padding;
+
+            // Fungsi mapping Z-score ke posisi Y
+            const mapZToY = (z) => padding + chartHeight * (1 - (z - minZ) / zRange);
+
+            // Warna Kurva WHO
+            const curveColors = {
+                '+3': '#ef4444', // Danger (Red)
+                '+2': '#f59e0b', // Warning (Amber)
+                '+1': '#3b82f6', // Info (Blue)
+                '0': '#10b981', // Success (Green, Median)
+                '-1': '#3b82f6', // Info (Blue)
+                '-2': '#f59e0b', // Warning (Amber)
+                '-3': '#ef4444'  // Danger (Red)
+            };
+
+            // 1. Gambar Background Area
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+
+            // 2. Gambar Garis Z-score (Horizontal)
+            const zLines = [3, 2, 1, 0, -1, -2, -3];
+            ctx.textAlign = 'right';
+            ctx.font = '10px Inter';
+
+            zLines.forEach(z => {
+                const y = mapZToY(z);
+                const color = curveColors[z.toString()];
+
+                // Garis
+                ctx.beginPath();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = (z === 0) ? 2 : 1;
+                ctx.setLineDash((z === 0) ? [] : [4, 4]);
+                ctx.moveTo(padding, y);
+                ctx.lineTo(width - padding, y);
+                ctx.stroke();
+
+                // Label
+                ctx.fillStyle = color;
+                ctx.fillText(`Z=${z}`, padding - 5, y + 4);
+            });
+            ctx.setLineDash([]); // Reset line dash
+
+            // 3. Gambar Titik Data Anak
+            const dataY = mapZToY(zScore);
+            const dataX = width / 2; // Titik tengah
+
+            // Lingkaran luar (border)
+            ctx.beginPath();
+            ctx.arc(dataX, dataY, 10, 0, Math.PI * 2, false);
+            ctx.fillStyle = '#000000';
+            ctx.fill();
             
-            if (age > 60) {
-                 generalMessage = `Usia (${ageDecimal.toFixed(1)} bulan) di atas 60 bulan. BB/U dan BB/TB dinonaktifkan. TB/U dan IMT/U menggunakan data WHO Reference 5-19 tahun yang akurat.`;
-                 messageBox.className = 'p-2 text-xs text-info bg-blue-100 border-l-4 border-info rounded-lg';
-            } else if (age > MAX_AGE_MONTHS) {
-                 generalMessage = `Peringatan Keras: Usia (${ageDecimal.toFixed(1)} bulan) di luar batas perhitungan (228 bulan). Hasil tidak dapat diandalkan.`;
-                 messageBox.className = 'p-2 text-xs text-red-800 bg-red-100 border-l-4 border-danger rounded-lg';
-            }
-            
-            // Peringatan WFL 45-110cm
-            if (height < 45 || height > 110) {
-                 if (age <= 60) { // WFL is calculated only if age <= 60
-                    generalMessage += ` Peringatan: Tinggi Badan (${height} cm) di luar rentang 45-110 cm untuk indeks BB/TB.`;
-                    messageBox.className = 'p-2 text-xs text-orange-800 bg-orange-100 border-l-4 border-warning rounded-lg';
-                 }
-            }
-            
-            messageBox.innerHTML = generalMessage;
+            // Lingkaran dalam (data point)
+            ctx.beginPath();
+            ctx.arc(dataX, dataY, 8, 0, Math.PI * 2, false);
+            ctx.fillStyle = results.color === 'bg-danger' ? '#ef4444' : (results.color === 'bg-warning' ? '#f59e0b' : '#10b981');
+            ctx.fill();
 
+            // Teks Z-score di samping titik
+            ctx.fillStyle = '#000000';
+            ctx.textAlign = 'left';
+            ctx.font = '12px Inter';
+            ctx.fillText(`Anak: ${zScore.toFixed(2)}`, dataX + 15, dataY + 4);
 
-            // Hitung IMT (Indeks Massa Tubuh)
-            const heightInMeters = height / 100;
-            const bmi = weight / (heightInMeters * heightInMeters);
+            // 4. Garis Vertikal (untuk estetika)
+            ctx.beginPath();
+            ctx.strokeStyle = '#d1d5db';
+            ctx.lineWidth = 1;
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.moveTo(width - padding, padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
 
-            const indicesToCalculate = ['WFA', 'HFA', 'WFL', 'BFA'];
-            const results = [];
-            currentZScoreResults = {}; // Reset visualisasi data
-
-            for (const index of indicesToCalculate) {
-                const refData = LMS_DATA[sex][index];
-                
-                // Non-aktifkan WFA dan WFL jika usia > 60 bulan
-                if ((index === 'WFA' || index === 'WFL') && age > 60) {
-                    const unavailableResult = {
-                        title: refData.label,
-                        zScore: 'N/A',
-                        status: 'Tidak Berlaku (>60 Bulan)',
-                        colorClass: 'bg-gray-400',
-                    };
-                    results.push(unavailableResult);
-                    currentZScoreResults[index] = unavailableResult;
-                    continue;
-                }
-
-                let observedValue;
-                if (index === 'WFA') { observedValue = weight; }
-                else if (index === 'HFA') { observedValue = height; }
-                else if (index === 'WFL') { observedValue = weight; }
-                else if (index === 'BFA') { observedValue = bmi; }
-                
-                const lms = getLMSValues(sex, index, age, height);
-
-                if (!lms) {
-                    const invalidResult = {
-                        title: refData.label,
-                        zScore: 'N/A',
-                        status: `${refData.keyType === 'age' ? 'Usia' : 'Tinggi/Panjang Badan'} di luar rentang WHO (${refData.range})`,
-                        colorClass: 'bg-gray-400',
-                    };
-                    results.push(invalidResult);
-                    currentZScoreResults[index] = invalidResult;
-                    continue;
-                }
-
-                const zScore = calculateLMSZScore(observedValue, lms.L, lms.M, lms.S);
-                const classification = classifyStatus(zScore, index);
-
-                const result = {
-                    title: refData.label,
-                    zScore: zScore.toFixed(2),
-                    status: classification.status,
-                    colorClass: classification.colorClass,
-                };
-                results.push(result);
-                    currentZScoreResults[index] = result; // Simpan untuk visualisasi
-            }
-
-            // Render Hasil ke UI
-            resultsGrid.innerHTML = results.map(result => `
-                <div class="p-2 rounded-xl shadow-lg border border-gray-200">
-                    <h3 class="text-sm font-bold text-secondary mb-1">${result.title.replace('per Usia', '/U').replace('per Tinggi Badan', '/TB')}</h3>
-                    
-                    <!-- Z-score -->
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="text-xs font-medium text-gray-600">Z-score</span>
-                        <span class="font-extrabold text-base text-primary">${result.zScore} SD</span>
-                    </div>
-
-                    <!-- Status -->
-                    <div class="p-1 text-white text-center rounded-lg ${result.colorClass}">
-                        <p class="font-bold text-xs">${result.status.split('(')[0].trim()}</p>
-                    </div>
-                </div>
-            `).join('');
-
-            // Perbarui Visualisasi setelah hasil dihitung
-            updateVisualization();
+            // 5. Label Sumbu Y
+            ctx.save();
+            ctx.translate(10, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#4b5563'; // Gray-600
+            ctx.fillText('Z-score (Simpangan Baku)', 0, 0);
+            ctx.restore();
         }
 
-        /** Inisialisasi: Mengatur tanggal hari ini dan tanggal lahir default (2 tahun lalu) */
-        function initializeApp() {
-            const today = new Date();
-            const defaultDOB = new Date();
+        // --- INITIALIZATION ---
+
+        window.onload = function() {
+            // Inisialisasi akordion agar tertutup saat pertama kali dimuat
+            const accordionContentSummary = document.getElementById('accordion-content-summary');
+            const accordionContentResults = document.getElementById('accordion-content-results');
+            if (accordionContentSummary) {
+                accordionContentSummary.style.maxHeight = '0px';
+            }
+            if (accordionContentResults) {
+                accordionContentResults.style.maxHeight = '0px';
+            }
             
-            // Set tanggal lahir default ke 2 tahun (24 bulan) yang lalu
-            defaultDOB.setFullYear(today.getFullYear() - 2); 
+            // Set Tanggal Hari Ini saat memuat
+            const defaultDOB = new Date(new Date().setFullYear(new Date().getFullYear() - 2));
+            const defaultDOBISO = window.dateToISO(defaultDOB);
             
-            document.getElementById('dob').value = dateToISO(defaultDOB);
+            // Mengatur nilai input TTL dengan format D/M/Y
+            document.getElementById('dob').value = window.dateToDMY(defaultDOBISO); 
 
-            // Jalankan perhitungan awal. Firebase loadProfiles akan dipanggil setelah auth siap.
-            calculateNutritionStatus();
-        }
-
-        // Jalankan inisialisasi saat DOM dimuat
-        document.addEventListener('DOMContentLoaded', initializeApp);
-
+            // MEMPERBAIKI: Menggunakan window.calculateNutritionStatus() untuk akses global
+            window.calculateNutritionStatus(); 
+            window.updateVisualization(); 
+            
+            // Tambahkan event listener untuk resize canvas
+            window.addEventListener('resize', window.updateVisualization);
+        };
     </script>
 </body>
 </html>
