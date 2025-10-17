@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalkulator Status Gizi Real-time (WHO-LMS)</title>
+    <title>Kalkulator Status Gizi Anak (WHO-LMS)</title>
     <!-- Memuat Tailwind CSS untuk styling modern dan responsif -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -49,7 +49,6 @@
             font-weight: 600;
             padding: 0.5rem; /* p-2 */
         }
-        /* Style .compact-input-group dihapus karena struktur HTML diubah ke flex inline */
         
         .table-container {
             overflow-x: auto; /* Memastikan tabel dapat digulir di layar kecil */
@@ -123,10 +122,10 @@
 
     <div class="w-full max-w-6xl bg-white card rounded-lg md:rounded-2xl p-4 md:p-6 mt-4 md:mt-8">
         <h1 class="text-xl md:text-3xl font-extrabold text-secondary mb-2 text-center">
-             Status Gizi Anak (WHO)
+            Kalkulator Status Gizi Anak (WHO-LMS)
         </h1>
         <p class="text-center text-gray-500 text-sm md:text-base mb-6">
-            Created by Yono
+            Perhitungan Z-score Real-time: 0-19 Tahun
         </p>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6">
@@ -246,6 +245,27 @@
                 </div>
                 <!-- END: PROFIL TERSIMPAN -->
 
+                <!-- Area Import Data -->
+                <div class="p-3 border border-subtle rounded-xl bg-gray-50 space-y-3">
+                    <h3 class="text-sm font-bold text-secondary">Impor Data Profil (CSV/TSV)</h3>
+                    
+                    <!-- Tombol Download Template -->
+                    <button onclick="downloadTemplate()" class="px-3 py-2 bg-warning text-secondary font-bold rounded-lg text-sm hover:bg-amber-500 transition duration-150 flex items-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        <span>Unduh Template (.csv)</span>
+                    </button>
+
+                    <div class="flex flex-col md:flex-row gap-2 items-center">
+                        <input type="file" id="import-file" accept=".csv, .tsv, .txt" class="w-full md:w-2/3 text-sm border border-gray-300 rounded-lg p-1.5 bg-white file:mr-2 file:py-1 file:px-2 file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-green-700">
+                        <button onclick="handleFileUpload()" class="w-full md:w-1/3 p-2 bg-info text-white font-bold rounded-lg hover:bg-blue-600 transition duration-150 text-sm">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0l-4 4m4-4v12"></path></svg>
+                            Proses Impor
+                        </button>
+                    </div>
+                </div>
+                <!-- END: Area Import Data -->
+
+
                 <!-- Area Pesan Kesalahan/Informasi (Dipindahkan ke sini) -->
                 <div id="message-box" class="p-3 text-sm text-green-800 bg-green-100 border-l-4 border-success rounded-lg">
                     <!-- Pesan akan diisi di sini setelah perhitungan -->
@@ -256,7 +276,7 @@
                 <div class="mt-6">
                     <button id="accordion-toggle-summary" onclick="toggleAccordion('accordion-content-summary', 'accordion-icon-summary')" class="w-full flex justify-between items-center p-3 bg-secondary text-white font-bold rounded-lg hover:bg-gray-700 transition duration-150 text-left">
                         <h2 class="text-lg md:text-xl font-bold">Ringkasan Klasifikasi</h2>
-                        <svg id="accordion-icon-summary" class="w-5 h-5 transition-transform duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        <svg class="w-5 h-5 transition-transform duration-300 transform" id="accordion-icon-summary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     <!-- Konten akordion yang dapat disembunyikan -->
                     <div id="accordion-content-summary" class="overflow-hidden transition-all duration-300 max-h-0 border border-t-0 rounded-b-lg">
@@ -272,7 +292,7 @@
                 <div class="mt-6">
                     <button id="accordion-toggle-results" onclick="toggleAccordion('accordion-content-results', 'accordion-icon-results')" class="w-full flex justify-between items-center p-3 bg-secondary text-white font-bold rounded-lg hover:bg-gray-700 transition duration-150 text-left">
                         <h2 class="text-lg md:text-xl font-bold">Hasil Z-score & Visualisasi</h2>
-                        <svg id="accordion-icon-results" class="w-5 h-5 transition-transform duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        <svg class="w-5 h-5 transition-transform duration-300 transform" id="accordion-icon-results" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     <div id="accordion-content-results" class="overflow-hidden transition-all duration-300 max-h-0 border border-t-0 rounded-b-lg">
                         <div class="accordion-content-inner space-y-4">
@@ -370,9 +390,6 @@
         // --- END FUNGSI AKORDION ---
 
         // --- FUNGSI MASKING TTL ---
-        // Karena element 'dob' belum ada saat skrip global dimuat,
-        // event listener harus dipasang setelah window.onload atau di dalam fungsi.
-        // Untuk saat ini, kita deklarasikan variabelnya di sini
         let el; 
         
         function setCaret(pos){ if(el) requestAnimationFrame(()=> el.setSelectionRange(pos,pos)); }
@@ -494,8 +511,6 @@
         }
         
         // --- DATA REFERENSI WHO-LMS ---
-        // (Data array LMS lengkap telah dipindahkan ke sini)
-
         // BB/U - Laki-laki (WFA Male 0-60m)
         const WFA_M_LMS = [
             [0, 1.156, 3.322, 0.145], [1, 1.146, 4.545, 0.141], [2, 1.132, 5.666, 0.136], [3, 1.111, 6.592, 0.131], [4, 1.085, 7.301, 0.126], 
@@ -694,9 +709,7 @@
         ];
 
         // --- PENGGABUNGAN DATA LMS 0-228m ---
-        // Fungsi untuk menghitung LMS pada usia/tinggi tertentu menggunakan data LMS yang disediakan
         function interpolateLMSPoints(dataPoints, x) {
-            // ... (Fungsi interpolateLMS dari kode lama) ...
             let p1, p2;
 
             if (x < dataPoints[0][0]) {
@@ -724,7 +737,7 @@
             const x2 = p2[0];
             const L2 = p2[1], M2 = p2[2], S2 = p2[3];
 
-            if (x1 === x2) return { L: L1, M: M1, S: S1 };
+            if (x1 === x2) return { L: L1, M: M2, S: S1 };
 
             const ratio = (x - x1) / (x2 - x1);
 
@@ -800,7 +813,11 @@
             if (!isoDate) return '';
             try {
                 const [year, month, day] = isoDate.split('-');
-                return `${day}/${month}/${year}`;
+                // Pastikan format date ISO-nya benar sebelum dikonversi
+                if (year && month && day) {
+                    return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+                }
+                return '';
             } catch {
                 return '';
             }
@@ -1377,6 +1394,7 @@
                 if (sex === 'male') data = WFL_M_LMS;
                 else data = WFL_F_LMS;
 
+                // WFL hanya berlaku 45-110cm dan < 60 bulan
                 if (heightCm < 45 || heightCm > 110 || ageMonths > 60) {
                      return null; 
                 }
@@ -1578,7 +1596,7 @@
             window.renderChildList();
         }
 
-        // --- FUNGSI COPY DATA (BARU) ---
+        // --- FUNGSI COPY DATA ---
         window.copyFilteredDataToClipboard = function() {
             const index = window.currentTableIndex;
             const profiles = window.allChildProfiles;
@@ -1596,6 +1614,7 @@
                 'BFA': 'IMT/U (Z)'
             };
 
+            // Menggunakan TAB (\t) sebagai pemisah untuk kompatibilitas Excel yang lebih baik saat ditempel (TSV)
             let tsv = ['No', 'Nama', 'JK', 'Tgl Lahir (HH/BB/TTTT)', 'BB (kg)', 'TB/PB (cm)', 'Umur', headerIndex[index], 'Status'].join('\t') + '\n';
             
             profiles.forEach((data, i) => {
@@ -1646,7 +1665,193 @@
                 window.showMessage('Gagal menyalin data ke clipboard. Peramban (browser) Anda mungkin memblokir fungsi ini.', 'danger');
             }
         };
-        
+
+        // --- FUNGSI DOWNLOAD TEMPLATE CSV BARU ---
+        window.downloadTemplate = function() {
+            // Menggunakan koma (,) sebagai pemisah untuk format CSV
+            const templateHeaders = ['Nama', 'TTL (HH/BB/TTTT)', 'JK (male/female)', 'BB (kg)', 'TB/PB (cm)'].join(',');
+            const sampleData = ['Contoh Anak', '01/01/2023', 'male', '13.5', '95.0'].join(',');
+            const csvContent = templateHeaders + '\n' + sampleData + '\n';
+
+            // Menggunakan MIME type dan ekstensi untuk CSV
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            
+            link.href = url;
+            link.download = 'template_impor_status_gizi.csv'; // Ekstensi .csv
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            window.showMessage('Template .csv berhasil diunduh. Harap edit di Excel/Sheet dan impor kembali.', 'info');
+        }
+
+
+        // --- FUNGSI IMPORT CSV/TSV ---
+        window.handleFileUpload = function() {
+            const fileInput = document.getElementById('import-file');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                window.showMessage('Pilih file CSV atau TSV terlebih dahulu.', 'warning');
+                return;
+            }
+            
+            // Check file extension just in case, though accept=".csv, .tsv, .txt" is set
+            const fileName = file.name.toLowerCase();
+            if (!fileName.endsWith('.csv') && !fileName.endsWith('.tsv') && !fileName.endsWith('.txt')) {
+                window.showMessage('Format file tidak didukung. Harap gunakan CSV, TSV, atau TXT.', 'danger');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                window.processImportedData(content, fileInput); // FIX: Pass fileInput here
+            };
+            reader.onerror = function() {
+                window.showMessage('Gagal membaca file.', 'danger');
+            };
+            
+            window.showMessage('Memproses file impor...', 'info');
+            reader.readAsText(file);
+        }
+
+        window.processImportedData = function(csvContent, fileInput) { // FIX: Receive fileInput here
+            // Determine delimiter: tab (\t) for TSV/Excel or comma (,) for CSV
+            const lines = csvContent.split(/\r\n|\n/);
+            
+            if (lines.length <= 1) {
+                window.showMessage('File kosong atau hanya berisi header.', 'warning');
+                if (fileInput) fileInput.value = ''; // Clear file input on error path
+                return;
+            }
+
+            // Heuristic to guess delimiter based on the first data line
+            let delimiter = ',';
+            // Pengecekan baris kedua untuk delimiter (karena baris pertama mungkin header, baris kedua contoh data)
+            const secondLine = lines.length > 1 ? lines[1] : lines[0];
+            if (secondLine.includes('\t') && !secondLine.includes(',')) {
+                delimiter = '\t'; // Likely TSV
+            }
+
+            const profiles = window.allChildProfiles;
+            let importedCount = 0;
+            let failedCount = 0;
+            const headers = lines[0].split(delimiter).map(h => h.trim());
+
+            // Skip header (lines[0]) and example row (lines[1]) if available
+            let startLine = headers.join('').toLowerCase().includes('ttl') ? 1 : 0; // Mulai dari baris data pertama, bukan header
+            if(lines[1].toLowerCase().includes('contoh anak')) startLine = 2; // Jika baris kedua adalah contoh data, mulai dari baris ketiga
+
+            // Process data lines
+            for (let i = startLine; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue; 
+
+                const values = line.split(delimiter).map(v => v.trim());
+
+                // Expected order: Nama, TTL (DD/MM/YYYY), JK (male/female), BB (kg), TB/PB (cm)
+                if (values.length < 5) {
+                    failedCount++;
+                    continue;
+                }
+
+                // 1. Map data from CSV structure (assuming fixed order for simplicity)
+                const tempDobDisplay = values[1]; 
+                const tempSex = values[2].toLowerCase() === 'perempuan' ? 'female' : 'male';
+                const tempWeight = parseFloat(values[3]);
+                const tempHeight = parseFloat(values[4]);
+                
+                // 2. Validate TTL format (DD/MM/YYYY) and convert to ISO (YYYY-MM-DD)
+                let dobIso = null;
+                const dateParts = tempDobDisplay.split('/');
+                if (dateParts.length === 3) {
+                    const [dayStr, monthStr, yearStr] = dateParts;
+                    const day = parseInt(dayStr, 10);
+                    const month = parseInt(monthStr, 10);
+                    const year = parseInt(yearStr, 10);
+
+                    // Re-run validation logic
+                    const dateCheck = new Date(year, month - 1, day); 
+                    if (dateCheck.getFullYear() === year && dateCheck.getMonth() === month - 1 && dateCheck.getDate() === day) {
+                         dobIso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    }
+                }
+                
+                // 3. Final Validation check
+                if (!values[0] || !dobIso || isNaN(tempWeight) || tempWeight <= 0 || isNaN(tempHeight) || tempHeight <= 0) {
+                    failedCount++;
+                    continue;
+                }
+                
+                // 4. Calculate Age and Check Limit
+                const ageResult = calculateAge(dobIso);
+                const currentAgeMonths = ageResult.totalMonths;
+                if (currentAgeMonths > MAX_AGE_MONTHS) {
+                    failedCount++; // Skip if over 19 years limit
+                    continue;
+                }
+
+                // 5. Calculate Z-scores (Mimic window.calculateNutritionStatus logic)
+                const resultStatus = {};
+                const indexes = ['WFA', 'HFA', 'WFL', 'BFA'];
+
+                indexes.forEach(index => {
+                    const lms = getLMS(index, tempSex, currentAgeMonths, tempHeight);
+                    let zScore = 'N/A';
+                    if (lms) {
+                        try {
+                            let measurement = (index === 'BFA') ? (tempWeight / (tempHeight / 100) ** 2) : (index === 'WFL' ? tempWeight : (index === 'WFA' ? tempWeight : tempHeight));
+                            zScore = calculateZScore(measurement, lms.L, lms.M, lms.S);
+                        } catch (e) {
+                            zScore = 'N/A';
+                        }
+                    }
+                    const { classification, color } = getClassification(zScore, index);
+                    resultStatus[index] = { index, zScore, classification, color, rawLMS: lms };
+                });
+                
+                // 6. Save Valid Data to LocalStorage
+                const docId = Date.now().toString() + '_' + importedCount;
+
+                const childData = { 
+                    id: docId,
+                    name: values[0].trim(), 
+                    dob: dobIso,
+                    sex: tempSex,
+                    weight: tempWeight,
+                    height: tempHeight,
+                    lastStatus: resultStatus, 
+                    primaryIndex: 'WFA', 
+                    savedAt: new Date().toISOString()
+                };
+                
+                profiles.unshift(childData);
+                importedCount++;
+            }
+
+            // Save all new profiles back to localStorage
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(profiles));
+            window.allChildProfiles = profiles;
+            window.renderChildList();
+
+            let resultMessage = `Impor selesai: ${importedCount} profil anak berhasil ditambahkan.`;
+            if (failedCount > 0) {
+                 resultMessage += ` (${failedCount} baris diabaikan karena data tidak lengkap, tidak valid, atau melebihi batas usia.)`;
+                 window.showMessage(resultMessage, 'warning');
+            } else {
+                 window.showMessage(resultMessage, 'success');
+            }
+            
+            // Clear file input - FIX: Use the received fileInput element
+            if (fileInput) { 
+                fileInput.value = '';
+            }
+        }
+
         // --- INITIALIZATION ---
         window.onload = function() {
             // Pasang event listener masking TTL
