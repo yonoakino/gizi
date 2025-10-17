@@ -166,7 +166,7 @@
                 <div class="flex items-center justify-between">
                     <label for="weight" class="text-sm font-medium text-gray-700 w-1/3">BB (kg)</label>
                     <input type="number" id="weight" value="" step="0.1" min="0" oninput="calculateNutritionStatus()" 
-                           placeholder="Contoh: 13.0" 
+                           placeholder="Contoh: 13,0" 
                            class="w-2/3 p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
                 </div>
 
@@ -174,7 +174,7 @@
                 <div class="flex items-center justify-between">
                     <label for="height" class="text-sm font-medium text-gray-700 w-1/3">TB/PB (cm)</label>
                     <input type="number" id="height" value="" step="0.1" min="0" oninput="calculateNutritionStatus()" 
-                           placeholder="Contoh: 90.0" 
+                           placeholder="Contoh: 90,0" 
                            class="w-2/3 p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
                 </div>
 
@@ -184,9 +184,48 @@
                 </div>
 
                 <!-- Aksi Simpan -->
-                <button onclick="saveChildProfile()" class="w-full p-3 bg-primary text-white font-bold rounded-lg hover:bg-green-700 transition duration-150 text-sm">
+                <button onclick="saveChildProfile()" class="w-full p-3 bg-primary text-white font-bold rounded-lg hover:bg-green-700 transition duration-150 text-sm mb-4">
                     Simpan Profil
                 </button>
+                
+                <!-- START: AKORDION IMPOR/EKSPOR (Di Kolom Kiri) -->
+                <div class="mt-4">
+                    <button id="accordion-toggle-import" onclick="toggleAccordion('accordion-content-import', 'accordion-icon-import')" class="w-full flex justify-between items-center p-3 bg-secondary text-white font-bold rounded-lg hover:bg-gray-700 transition duration-150 text-left text-sm">
+                        <h2 class="font-bold">Impor / Ekspor Data</h2>
+                        <svg class="w-4 h-4 transition-transform duration-300 transform" id="accordion-icon-import" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <!-- Konten akordion Import Data Profil -->
+                    <div id="accordion-content-import" class="overflow-hidden transition-all duration-300 max-h-0 border border-t-0 rounded-b-lg">
+                        <div class="accordion-content-inner space-y-3 p-3 bg-gray-50 border-subtle">
+                            <p class="text-xs text-gray-600 font-semibold mb-2">Impor Data Profil (CSV/TSV)</p>
+
+                            <!-- Tombol Download Template -->
+                            <button onclick="downloadTemplate()" class="w-full px-3 py-2 bg-warning text-secondary font-bold rounded-lg text-sm hover:bg-amber-500 transition duration-150 flex items-center justify-center space-x-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                <span>Unduh Template (.csv)</span>
+                            </button>
+
+                            <div class="flex flex-col gap-2 items-center">
+                                <input type="file" id="import-file" accept=".csv, .tsv, .txt" class="w-full text-xs border border-gray-300 rounded-lg p-1.5 bg-white file:mr-2 file:py-1 file:px-2 file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-green-700">
+                                <button onclick="handleFileUpload()" class="w-full p-2 bg-info text-white font-bold rounded-lg hover:bg-blue-600 transition duration-150 text-sm">
+                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0l-4 4m4-4v12"></path></svg>
+                                    Proses Impor
+                                </button>
+                            </div>
+
+                            <div class="pt-2 border-t border-subtle">
+                                <p class="text-xs text-gray-600 font-semibold mb-2">Ekspor Data Profil</p>
+                                <button onclick="exportFilteredDataToCSV()" class="w-full p-2 bg-success text-white font-bold rounded-lg hover:bg-green-700 transition duration-150 text-sm">
+                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    Export Data (.csv)
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                <!-- END: AKORDION IMPOR/EKSPOR -->
+                
             </div>
 
             <!-- KOLOM HASIL & VISUALISASI (KANAN) -->
@@ -244,27 +283,6 @@
                     </div>
                 </div>
                 <!-- END: PROFIL TERSIMPAN -->
-
-                <!-- Area Import Data -->
-                <div class="p-3 border border-subtle rounded-xl bg-gray-50 space-y-3">
-                    <h3 class="text-sm font-bold text-secondary">Impor Data Profil (CSV/TSV)</h3>
-                    
-                    <!-- Tombol Download Template -->
-                    <button onclick="downloadTemplate()" class="px-3 py-2 bg-warning text-secondary font-bold rounded-lg text-sm hover:bg-amber-500 transition duration-150 flex items-center space-x-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                        <span>Unduh Template (.csv)</span>
-                    </button>
-
-                    <div class="flex flex-col md:flex-row gap-2 items-center">
-                        <input type="file" id="import-file" accept=".csv, .tsv, .txt" class="w-full md:w-2/3 text-sm border border-gray-300 rounded-lg p-1.5 bg-white file:mr-2 file:py-1 file:px-2 file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-green-700">
-                        <button onclick="handleFileUpload()" class="w-full md:w-1/3 p-2 bg-info text-white font-bold rounded-lg hover:bg-blue-600 transition duration-150 text-sm">
-                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0l-4 4m4-4v12"></path></svg>
-                            Proses Impor
-                        </button>
-                    </div>
-                </div>
-                <!-- END: Area Import Data -->
-
 
                 <!-- Area Pesan Kesalahan/Informasi (Dipindahkan ke sini) -->
                 <div id="message-box" class="p-3 text-sm text-green-800 bg-green-100 border-l-4 border-success rounded-lg">
@@ -775,6 +793,15 @@
         // UTILITY: Format Date to ISO String (Dipindahkan ke sini agar tersedia global sebelum window.onload)
         window.dateToISO = (date) => date.toISOString().split('T')[0];
 
+        // --- UTILITY BARU: Format Angka dengan Koma Desimal ---
+        function formatNumber(num) {
+            if (typeof num !== 'number' || isNaN(num)) return 'N/A';
+            // Use Intl.NumberFormat for robust localization (or simple replace for fix)
+            // Sticking to simple replace to avoid complex locale issues:
+            return num.toFixed(2).replace('.', ',');
+        }
+
+
         /**
          * ======================================================================
          * UI/MODAL & CRUD Functions (Menggunakan localStorage)
@@ -860,6 +887,7 @@
             const name = document.getElementById('child-name').value;
             const dob = window.getDOBString(); // Menggunakan fungsi baru untuk parsing D/M/Y
             const sex = document.getElementById('sex').value;
+            // NOTE: Input type="number" di HTML menggunakan titik (.) sebagai pemisah desimal di JS
             const weight = parseFloat(document.getElementById('weight').value);
             const height = parseFloat(document.getElementById('height').value);
             
@@ -1279,7 +1307,8 @@
                 return;
             }
             
-            const getZScoreDisplay = (res) => res?.zScore !== undefined ? (res.zScore === 'N/A' ? 'N/A' : res.zScore.toFixed(2)) : 'N/A';
+            // Menggunakan formatNumber untuk tampilan Z-score dengan koma
+            const getZScoreDisplay = (res) => res?.zScore !== undefined ? (res.zScore === 'N/A' ? 'N/A' : formatNumber(res.zScore)) : 'N/A';
             const getStatusKategori = (res) => res?.classification || 'N/A';
 
             filteredProfiles.forEach((data, index) => {
@@ -1462,7 +1491,8 @@
             
             for (const index in results) {
                 const res = results[index];
-                const zScoreDisplay = res.zScore === 'N/A' ? 'N/A' : res.zScore.toFixed(2);
+                // Menggunakan formatNumber untuk tampilan Z-score dengan koma
+                const zScoreDisplay = res.zScore === 'N/A' ? 'N/A' : formatNumber(res.zScore);
                 
                 const card = document.createElement('div');
                 const bgColor = res.color.replace('bg-', 'bg-');
@@ -1508,7 +1538,8 @@
             }
 
             const zScore = results.zScore;
-            zScoreLabel.textContent = `${results.title}: Z-score ${zScore.toFixed(2)}`;
+            // Menggunakan formatNumber untuk label Z-score dengan koma
+            zScoreLabel.textContent = `${results.title}: Z-score ${formatNumber(zScore)}`;
 
             const minZ = -4; 
             const maxZ = 4;  
@@ -1570,7 +1601,8 @@
             ctx.fillStyle = '#000000';
             ctx.textAlign = 'left';
             ctx.font = '12px Inter';
-            ctx.fillText(`Anak: ${zScore.toFixed(2)}`, dataX + 15, dataY + 4);
+            // Menggunakan formatNumber untuk titik data Z-score dengan koma
+            ctx.fillText(`Anak: ${formatNumber(zScore)}`, dataX + 15, dataY + 4);
 
             ctx.beginPath();
             ctx.strokeStyle = '#d1d5db';
@@ -1619,22 +1651,28 @@
             
             profiles.forEach((data, i) => {
                 const status = data.lastStatus[index] || {};
-                const zScore = status.zScore === 'N/A' || typeof status.zScore !== 'number' ? 'N/A' : status.zScore.toFixed(2);
+                // Menggunakan formatNumber untuk Z-score dengan koma
+                const zScoreDisplay = status.zScore === 'N/A' || typeof status.zScore !== 'number' ? 'N/A' : formatNumber(status.zScore);
                 const classification = status.classification || 'N/A';
                 
                 const dobDisplay = window.dateToDMY(data.dob); 
                 const ageResultForTable = calculateAge(data.dob);
                 const ageDisplayForTable = ageResultForTable ? ageResultForTable.display : 'Tgl Salah';
+
+                // Mengubah nilai numerik BB dan TB/PB untuk ekspor (Menggunakan koma desimal)
+                const weightDisplay = formatNumber(data.weight);
+                const heightDisplay = formatNumber(data.height);
+                const sexDisplay = data.sex === 'male' ? 'Laki-laki' : 'Perempuan'; // Lokal
                 
                 const row = [
                     i + 1,
                     data.name,
-                    data.sex === 'male' ? 'L' : 'P',
+                    sexDisplay,
                     dobDisplay,
-                    data.weight,
-                    data.height,
+                    weightDisplay,
+                    heightDisplay,
                     ageDisplayForTable,
-                    zScore,
+                    zScoreDisplay,
                     classification
                 ].join('\t');
                 
@@ -1666,11 +1704,78 @@
             }
         };
 
+        // --- FUNGSI EXPORT CSV (BARU) ---
+        window.exportFilteredDataToCSV = function() {
+            const index = window.currentTableIndex;
+            const profiles = window.allChildProfiles;
+
+            if (profiles.length === 0) {
+                window.showMessage('Tidak ada data profil yang tersimpan untuk diekspor.', 'warning');
+                return;
+            }
+
+            // Headers
+            const headerIndex = {
+                'WFA': 'BB/U (Z)',
+                'HFA': 'TB/U (Z)',
+                'WFL': 'BB/TB (Z)',
+                'BFA': 'IMT/U (Z)'
+            };
+
+            // Menggunakan koma (,) sebagai pemisah
+            let csv = ['No', 'Nama', 'JK', 'Tgl Lahir (HH/BB/TTTT)', 'BB (kg)', 'TB/PB (cm)', 'Umur', headerIndex[index], 'Status'].join(',') + '\n';
+            
+            profiles.forEach((data, i) => {
+                const status = data.lastStatus[index] || {};
+                const zScoreDisplay = status.zScore === 'N/A' || typeof status.zScore !== 'number' ? 'N/A' : formatNumber(status.zScore);
+                const classification = status.classification || 'N/A';
+                
+                const dobDisplay = window.dateToDMY(data.dob); 
+                const ageResultForTable = calculateAge(data.dob);
+                const ageDisplayForTable = ageResultForTable ? ageResultForTable.display : 'Tgl Salah';
+
+                // Mengubah nilai numerik BB dan TB/PB untuk ekspor (Menggunakan koma desimal)
+                const weightDisplay = formatNumber(data.weight);
+                const heightDisplay = formatNumber(data.height);
+                const sexDisplay = data.sex === 'male' ? 'Laki-laki' : 'Perempuan'; // Lokal
+                
+                // Peringatan: Data yang mengandung koma (,) di dalamnya (misal nama dengan koma) dapat menyebabkan kolom bergeser.
+                const row = [
+                    i + 1,
+                    `"${data.name}"`, // Menggunakan tanda kutip ganda untuk menangani koma di nama (jika ada)
+                    sexDisplay,
+                    dobDisplay,
+                    weightDisplay,
+                    heightDisplay,
+                    ageDisplayForTable,
+                    zScoreDisplay,
+                    classification
+                ].join(',');
+                
+                csv += row + '\n';
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            
+            link.href = url;
+            link.download = `data_gizi_${index}_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            window.showMessage('Data berhasil diekspor ke file CSV.', 'success');
+        }
+
+
         // --- FUNGSI DOWNLOAD TEMPLATE CSV BARU ---
         window.downloadTemplate = function() {
             // Menggunakan koma (,) sebagai pemisah untuk format CSV
-            const templateHeaders = ['Nama', 'TTL (HH/BB/TTTT)', 'JK (male/female)', 'BB (kg)', 'TB/PB (cm)'].join(',');
-            const sampleData = ['Contoh Anak', '01/01/2023', 'male', '13.5', '95.0'].join(',');
+            const templateHeaders = ['Nama', 'TTL (HH/BB/TTTT)', 'JK (laki-laki/perempuan)', 'BB (kg)', 'TB/PB (cm)'].join(',');
+            // Menggunakan koma desimal pada data sampel
+            const sampleData = ['Contoh Anak', '01/01/2023', 'laki-laki', '13,5', '95,0'].join(','); 
             const csvContent = templateHeaders + '\n' + sampleData + '\n';
 
             // Menggunakan MIME type dan ekstensi untuk CSV
@@ -1744,7 +1849,7 @@
 
             // Skip header (lines[0]) and example row (lines[1]) if available
             let startLine = headers.join('').toLowerCase().includes('ttl') ? 1 : 0; // Mulai dari baris data pertama, bukan header
-            if(lines[1].toLowerCase().includes('contoh anak')) startLine = 2; // Jika baris kedua adalah contoh data, mulai dari baris ketiga
+            if(lines.length > 1 && lines[1].toLowerCase().includes('contoh anak')) startLine = 2; // Jika baris kedua adalah contoh data, mulai dari baris ketiga
 
             // Process data lines
             for (let i = startLine; i < lines.length; i++) {
@@ -1761,9 +1866,22 @@
 
                 // 1. Map data from CSV structure (assuming fixed order for simplicity)
                 const tempDobDisplay = values[1]; 
-                const tempSex = values[2].toLowerCase() === 'perempuan' ? 'female' : 'male';
-                const tempWeight = parseFloat(values[3]);
-                const tempHeight = parseFloat(values[4]);
+                
+                // LOKALISASI GENDER: Menerima 'laki-laki', 'l', 'perempuan', 'p', default 'male'
+                const rawSexInput = values[2].toLowerCase().trim();
+                let tempSex = 'male'; 
+                if (rawSexInput === 'perempuan' || rawSexInput === 'p') {
+                    tempSex = 'female';
+                } else if (rawSexInput === 'laki-laki' || rawSexInput === 'l') {
+                    tempSex = 'male';
+                }
+                
+                // DECIMAL FIX: Ganti koma (,) dengan titik (.) agar parseFloat berfungsi
+                const rawWeightString = values[3].replace(',', '.');
+                const rawHeightString = values[4].replace(',', '.');
+                
+                const tempWeight = parseFloat(rawWeightString);
+                const tempHeight = parseFloat(rawHeightString);
                 
                 // 2. Validate TTL format (DD/MM/YYYY) and convert to ISO (YYYY-MM-DD)
                 let dobIso = null;
@@ -1860,11 +1978,16 @@
             // Inisialisasi akordion agar tertutup saat pertama kali dimuat
             const accordionContentSummary = document.getElementById('accordion-content-summary');
             const accordionContentResults = document.getElementById('accordion-content-results');
+            const accordionContentImport = document.getElementById('accordion-content-import'); // Tambahan: Inisialisasi akordion Impor
+
             if (accordionContentSummary) {
                 accordionContentSummary.style.maxHeight = '0px';
             }
             if (accordionContentResults) {
                 accordionContentResults.style.maxHeight = '0px';
+            }
+            if (accordionContentImport) {
+                accordionContentImport.style.maxHeight = '0px';
             }
             
             // Set default values
