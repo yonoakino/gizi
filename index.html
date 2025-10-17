@@ -245,6 +245,12 @@
                 </div>
                 <!-- END: PROFIL TERSIMPAN -->
 
+                <!-- Area Pesan Kesalahan/Informasi (Dipindahkan ke sini) -->
+                <div id="message-box" class="p-3 text-sm text-green-800 bg-green-100 border-l-4 border-success rounded-lg">
+                    <!-- Pesan akan diisi di sini setelah perhitungan -->
+                    Masukkan data antropometri anak (Nama, TTL, BB, TB/PB) untuk memulai perhitungan status gizi.
+                </div>
+
                 <!-- START: Ringkasan Klasifikasi (AKORDION 1) -->
                 <div class="mt-6">
                     <button id="accordion-toggle-summary" onclick="toggleAccordion('accordion-content-summary', 'accordion-icon-summary')" class="w-full flex justify-between items-center p-3 bg-secondary text-white font-bold rounded-lg hover:bg-gray-700 transition duration-150 text-left">
@@ -269,12 +275,8 @@
                     </button>
                     <div id="accordion-content-results" class="overflow-hidden transition-all duration-300 max-h-0 border border-t-0 rounded-b-lg">
                         <div class="accordion-content-inner space-y-4">
-                            <!-- Area Pesan Kesalahan/Informasi (Dibiarkan di luar grid) -->
-                            <div id="message-box" class="p-3 text-sm text-green-800 bg-green-100 border-l-4 border-success rounded-lg">
-                                <!-- Pesan akan diisi di sini setelah perhitungan -->
-                                Masukkan data antropometri anak (Nama, TTL, BB, TB/PB) untuk memulai perhitungan status gizi.
-                            </div>
-
+                            <!-- Area Pesan Kesalahan/Informasi (Pesan sudah dipindahkan ke atas) -->
+                            
                             <!-- Pilihan Indeks untuk Visualisasi -->
                             <div class="flex flex-wrap items-center space-x-3 p-3 bg-gray-100 rounded-lg text-sm">
                                 <label for="visualization-index" class="font-medium text-gray-700">Visualisasi Kurva:</label>
