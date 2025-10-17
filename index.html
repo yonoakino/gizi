@@ -334,502 +334,25 @@
     </div>
     <!-- END MODAL VALIDASI -->
 
-    <!-- Import Firebase Services (MUST BE type="module") -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, collection, query, onSnapshot, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-
-        // Global Variables for Firebase instances
-        let db, auth;
-        window.db = db; // Make global for use outside module
-        window.auth = auth;
-        window.userId = null;
-        window.currentChildId = null;
-        window.pendingDeletionId = null; // State baru untuk konfirmasi penghapusan
-        window.allChildProfiles = []; // Cache for filtering
-        
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
-        window.db = db; 
-        window.auth = auth;
-        
-        /** Menampilkan modal konfirmasi hapus. */
-        window.showDeleteModal = function(docId, name, event) {
-            if (event) event.stopPropagation();
-            window.pendingDeletionId = docId;
-            document.getElementById('modal-child-name').textContent = name;
-            document.getElementById('modal-delete-confirmation-input').value = '';
-            document.getElementById('delete-modal').classList.remove('hidden');
-        }
-
-        /** Menyembunyikan modal konfirmasi hapus. */
-        window.hideDeleteModal = function() {
-            window.pendingDeletionId = null;
-            document.getElementById('delete-modal').classList.add('hidden');
-        }
-
-        /** Menampilkan modal validasi TTL/Usia. */
-        window.showValidationModal = function(title, message) {
-            document.getElementById('validation-modal-title').textContent = title;
-            document.getElementById('validation-modal-message').textContent = message;
-            document.getElementById('validation-modal').classList.remove('hidden');
-        }
-
-        /** Menyembunyikan modal validasi. */
-        window.hideValidationModal = function() {
-            document.getElementById('validation-modal').classList.add('hidden');
-        }
-        
-        /** Utility: Converts YYYY-MM-DD to DD/MM/YYYY */
-        window.dateToDMY = (isoDate) => {
-            if (!isoDate) return '';
-            try {
-                const [year, month, day] = isoDate.split('-');
-                return `${day}/${month}/${year}`;
-            } catch {
-                return '';
-            }
-        }
-
-        // --- FIREBASE UTILITY FUNCTIONS ---
-        
-        /** Mengambil nilai tanggal lahir dari input date tunggal (tipe text, format DD/MM/YYYY). */
-        window.getDOBString = function() {
-            const dobInput = document.getElementById('dob').value;
-            // Menghapus garis miring default jika input masih MASK
-            const cleanDobInput = dobInput.includes('_') ? '' : dobInput;
-            
-            if (!cleanDobInput || cleanDobInput === '//' || cleanDobInput === MASK_DEFAULT) return null;
-
-            // Expecting DD/MM/YYYY format
-            const parts = cleanDobInput.split('/');
-            if (parts.length !== 3) return null;
-
-            const [dayStr, monthStr, yearStr] = parts;
-            const day = parseInt(dayStr, 10);
-            const month = parseInt(monthStr, 10);
-            const year = parseInt(yearStr, 10);
-
-            // Basic numerical validation
-            if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
-            
-            // Periksa batasan sederhana (bulan 1-12, tahun 1900-2100)
-            if (month < 1 || month > 12 || year < 1900 || year > 2100) return null;
-
-            // Check date validity (using Date object behavior)
-            const dateCheck = new Date(year, month - 1, day); // month is 0-indexed for JS Date constructor
-
-            // Check if the parts match the constructed date (e.g., prevents 30/02/2024 from being valid)
-            if (dateCheck.getFullYear() !== year || dateCheck.getMonth() !== month - 1 || dateCheck.getDate() !== day) {
-                return null;
-            }
-
-            // Return in ISO format (YYYY-MM-DD) for consistency with new Date() and storage
-            const paddedMonth = String(month).padStart(2, '0');
-            const paddedDay = String(day).padStart(2, '0');
-            
-            return `${year}-${paddedMonth}-${paddedDay}`;
-        }
-
-
-        /** Mengambil data input dari form. */
-        window.getFormData = function() {
-            const name = document.getElementById('child-name').value;
-            const dob = window.getDOBString(); // Menggunakan fungsi baru untuk parsing D/M/Y
-            const sex = document.getElementById('sex').value;
-            const weight = parseFloat(document.getElementById('weight').value);
-            const height = parseFloat(document.getElementById('height').value);
-            
-            if (!dob) return { name, dob: null, sex, weight, height };
-            
-            return { name, dob, sex, weight, height };
-        }
-
-        /** Signs in the user and sets up the listener for child profiles. */
-        window.setupFirebase = async function() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token.length > 0) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        window.userId = user.uid;
-                        // console.log("Firebase Auth Ready. User ID:", window.userId);
-                        window.loadChildProfiles();
-                    } else {
-                        // console.log("No user signed in. Using anonymous ID.");
-                        window.userId = 'anonymous'; // Fallback
-                    }
-                });
-            } catch (e) {
-                console.error("Firebase initialization or sign-in failed:", e);
-                window.userId = 'error';
-            }
-        }
-        
-        /** Saves the current child profile data to Firestore. */
-        window.saveChildProfile = async function() {
-            // Reset konfirmasi hapus jika ada
-            window.hideDeleteModal();
-            window.hideValidationModal();
-
-            if (!window.userId || window.userId === 'anonymous') {
-                document.getElementById('message-box').innerHTML = '<span class="text-red-800">Gagal Simpan: Autentikasi belum siap. Coba lagi.</span>';
-                document.getElementById('message-box').className = 'p-3 text-sm bg-red-100 border-l-4 border-danger rounded-lg';
-                return;
-            }
-
-            // 1. Ambil data form
-            const formData = window.getFormData();
-            const { name, dob, weight, height } = formData;
-            
-            let errorMessage = '';
-
-            // 2. Validasi input dasar
-            // Ambil nilai dari DOM secara langsung untuk cek kekosongan
-            const nameValue = document.getElementById('child-name').value.trim();
-            const dobValue = document.getElementById('dob').value;
-            const weightValue = document.getElementById('weight').value.trim();
-            const heightValue = document.getElementById('height').value.trim();
-
-            if (!nameValue) { errorMessage = 'Nama Anak harus diisi.'; }
-            else if (dobValue === MASK || dobValue === MASK_DEFAULT || dobValue === '//' || !dob) { 
-                // Jika TTL tidak terisi/valid, gunakan modal validasi (KASUS 1)
-                window.showValidationModal('Tanggal Lahir Tidak Valid', 'Pastikan Tanggal Lahir diisi lengkap dengan format HH/BB/TTTT yang valid. Cek tanggal, bulan, dan tahun.');
-                return;
-            }
-            else if (weightValue === '' || isNaN(weight) || weight <= 0) { errorMessage = 'Berat Badan (BB) harus diisi dengan nilai yang valid (> 0).'; }
-            else if (heightValue === '' || isNaN(height) || height <= 0) { errorMessage = 'Tinggi/Panjang Badan (TB/PB) harus diisi dengan nilai yang valid (> 0).'; }
-            
-            if (errorMessage) {
-                // Tampilkan pesan error umum untuk input non-TTL (KASUS 3)
-                window.showMessage(`Gagal Simpan: ${errorMessage}`, 'danger');
-                return;
-            }
-
-            // 3. Cek Batas Usia
-            const ageResult = calculateAge(dob);
-            const currentAgeMonths = ageResult ? ageResult.totalMonths : 0;
-            const ageDisplayStatus = ageResult ? ageResult.display : 'Format Tgl Salah / Belum Lengkap';
-            
-            if (currentAgeMonths > MAX_AGE_MONTHS) {
-                 // Usia di atas batas (KASUS 2)
-                window.showValidationModal('Batas Usia Terlampaui', `Usia anak (${ageDisplayStatus}) melebihi batas maksimum WHO-LMS (19 tahun / ${MAX_AGE_MONTHS} bulan). Data tidak akan disimpan.`);
-                return; 
-            }
-            
-            // 4. Paksa perhitungan status gizi terbaru
-            window.calculateNutritionStatus(); 
-
-            // 5. Ambil hasil status gizi dari global state setelah perhitungan
-            const lastStatus = window.currentZScoreResults; 
-            
-            // 6. Validasi hasil status gizi
-            const validStatus = Object.values(lastStatus).some(res => res && res.zScore && res.zScore !== 'N/A');
-            
-            if (!validStatus) {
-                window.showMessage('Gagal Simpan: Status gizi belum berhasil dihitung. Periksa kembali input Usia dan Tinggi/Panjang Badan.', 'danger');
-                return;
-            }
-
-            const docId = window.currentChildId || Date.now().toString();
-            
-            // Tentukan primary index default (WFA) atau yang terakhir dipilih
-            const primaryIndex = window.currentChildId 
-                                ? window.allChildProfiles.find(p => p.id === window.currentChildId)?.primaryIndex || 'WFA'
-                                : 'WFA';
-
-            // Gabungkan data antropometri dan status gizi terbaru
-            const childData = { 
-                name: nameValue, // Gunakan nilai yang sudah di-trim
-                dob: dob,
-                sex: formData.sex,
-                weight: weight,
-                height: height,
-                lastStatus: lastStatus, 
-                primaryIndex: primaryIndex, // Simpan indeks utama
-                savedAt: new Date() 
-            };
-            
-            const docRef = doc(db, 'artifacts', appId, 'users', window.userId, 'children', docId);
-
-            try {
-                await setDoc(docRef, childData);
-                window.currentChildId = null; // Reset ID agar entri berikutnya dianggap 'Profil Baru'
-                
-                // Reset message box to default state or clearance state
-                window.showMessage('Profil anak berhasil disimpan!', 'success');
-
-                // Setelah berhasil simpan, reset form untuk profil baru
-                window.clearCurrentChild();
-
-            } catch (e) {
-                console.error("Error saving document: ", e);
-                window.showMessage('Gagal Simpan ke Database. Lihat konsol untuk detail.', 'danger');
-            }
-        }
-        
-        /** Updates the primary index for a saved profile in Firestore. */
-        window.updateProfilePrimaryIndex = async function(docId, index, event) {
-            if (event) event.stopPropagation();
-            window.hideDeleteModal();
-            window.hideValidationModal();
-
-            const docRef = doc(db, 'artifacts', appId, 'users', window.userId, 'children', docId);
-
-            try {
-                await updateDoc(docRef, { primaryIndex: index });
-                // onSnapshot handles UI update
-            } catch(e) {
-                console.error("Failed to update primary index:", e);
-                const statusCell = document.getElementById(`status_cell_${docId}`);
-                if (statusCell) {
-                    statusCell.textContent = 'Gagal Update';
-                    statusCell.className = 'bg-danger-100 font-bold';
-                }
-            }
-        }
-
-        /** Memuat data anak yang dipilih ke form. */
-        window.loadChildData = function(id, data) {
-            window.hideDeleteModal();
-            window.hideValidationModal();
-            window.currentChildId = id;
-            document.getElementById('child-name').value = data.name;
-
-            // MENGUBAH INPUT DATE DARI ISO KE D/M/Y UNTUK TAMPILAN
-            document.getElementById('dob').value = window.dateToDMY(data.dob); 
-
-            document.getElementById('sex').value = data.sex;
-            document.getElementById('weight').value = parseFloat(data.weight);
-            document.getElementById('height').value = parseFloat(data.height);
-
-            window.calculateNutritionStatus(); 
-
-            window.showMessage('Profil ' + data.name + ' berhasil dimuat.', 'info');
-        }
-        
-        /** Melakukan proses penghapusan setelah konfirmasi MODAL. */
-        window.confirmDeletion = async function() {
-            const docId = window.pendingDeletionId;
-            if (!docId) return;
-
-            const input = document.getElementById('modal-delete-confirmation-input').value;
-            if (input !== 'HAPUS') {
-                // Konfirmasi gagal
-                document.getElementById('modal-delete-confirmation-input').classList.add('border-danger');
-                document.getElementById('modal-delete-confirmation-input').placeholder = "Konfirmasi tidak valid. KETIK 'HAPUS'!";
-                return;
-            }
-            
-            window.hideDeleteModal(); // Sembunyikan modal sebelum operasi DB
-
-            const docRef = doc(db, 'artifacts', appId, 'users', window.userId, 'children', docId);
-            try {
-                await deleteDoc(docRef);
-                if (window.currentChildId === docId) {
-                    window.clearCurrentChild();
-                }
-                window.showMessage('Profil berhasil dihapus.', 'success');
-                
-            } catch (e) {
-                console.error("Error deleting document: ", e);
-                window.showMessage('Gagal menghapus profil.', 'danger');
-            } finally {
-                 window.pendingDeletionId = null;
-                 // Asumsi window.resetMessageBox ada, tapi jika tidak ada, biarkan setTimeout saja.
-                 setTimeout(() => {
-                     document.getElementById('message-box').innerHTML = 'Masukkan data antropometri anak (Nama, TTL, BB, TB/PB) untuk memulai perhitungan status gizi.';
-                     document.getElementById('message-box').className = 'p-3 text-sm text-green-800 bg-green-100 border-l-4 border-success rounded-lg';
-                 }, 3000);
-            }
-        }
-
-        /**
-         * Merender daftar anak ke dalam tabel, menerapkan filter dan menampilkan kolom berdasarkan
-         * indeks yang dipilih melalui radio button.
-         */
-        window.renderChildList = function() {
-            window.hideDeleteModal(); 
-            window.hideValidationModal();
-            const searchText = document.getElementById('profile-search').value.toLowerCase();
-            const selectedIndex = window.currentTableIndex; // Ambil indeks terpilih
-            
-            const filteredProfiles = window.allChildProfiles.filter(profile => 
-                profile.name.toLowerCase().includes(searchText)
-            );
-            
-            const tbody = document.getElementById('child-list');
-            const thead = document.getElementById('child-list-header');
-
-            // 1. Definisikan Judul Indeks yang Dipilih
-            const indexTitles = {
-                'WFA': 'BB/U (Z-score)',
-                'HFA': 'TB/U (Z-score)',
-                'WFL': 'BB/TB (Z-score)',
-                'BFA': 'IMT/U (Z-score)'
-            };
-
-            // 2. GENERATE HEADER HANYA DENGAN 7 KOLOM (Termasuk Umur)
-            thead.innerHTML = `
-                <th class="p-1">No</th>
-                <th class="p-1">Nama</th>
-                <th class="p-1">JK</th>
-                <th class="p-1">Umur</th>
-                <th class="p-1">${indexTitles[selectedIndex]}</th>
-                <th class="p-1">Status</th>
-                <th class="p-1">Aksi</th>
-            `;
-            
-            tbody.innerHTML = '';
-            
-            if (filteredProfiles.length === 0) {
-                // Pastikan colspan sesuai dengan jumlah kolom baru (7)
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-500 p-2">Tidak ada profil yang cocok atau belum tersimpan.</td></tr>';
-                return;
-            }
-            
-            // Map fungsi helper
-            const getZScoreDisplay = (res) => res?.zScore !== undefined ? (res.zScore === 'N/A' ? 'N/A' : res.zScore.toFixed(2)) : 'N/A';
-            const getStatusKategori = (res) => res?.classification || 'N/A';
-
-            filteredProfiles.forEach((data, index) => {
-                const status = data.lastStatus || {};
-                
-                // Ambil data status yang aktif berdasarkan radio button view
-                const activeStatus = status[selectedIndex] || {};
-                
-                const zScore = getZScoreDisplay(activeStatus);
-                const classificationText = getStatusKategori(activeStatus);
-                const activeZScore = activeStatus?.zScore;
-                
-                // Hitung usia untuk tampilan tabel
-                const ageResultForTable = calculateAge(data.dob); 
-                const ageDisplayForTable = ageResultForTable ? ageResultForTable.display : 'Tgl Salah';
-
-
-                const row = document.createElement('tr');
-                row.className = 'border-t hover:bg-gray-50 cursor-pointer';
-                
-                // Handler klik baris (muat data)
-                row.onclick = (e) => {
-                    // Cek jika target bukan tombol atau input (untuk mencegah load saat klik radio/tombol hapus)
-                    if (e.target.tagName !== 'BUTTON' && e.target.type !== 'radio' && e.target.tagName !== 'INPUT') {
-                        window.loadChildData(data.id, data);
-                    }
-                };
-                
-                // Menentukan warna latar belakang status berdasarkan Z-score TERPILIH
-                let statusBgClass = 'bg-gray-100'; 
-                if (activeZScore !== 'N/A' && typeof activeZScore === 'number') {
-                    if (selectedIndex === 'HFA') { // Logic Stunting
-                        if (activeZScore < -3) statusBgClass = 'bg-red-100';
-                        else if (activeZScore < -2) statusBgClass = 'bg-yellow-100';
-                        else statusBgClass = 'bg-green-50';
-                    } else { // Logic WFA, WFL, BFA
-                        if (activeZScore < -3 || activeZScore > 2) statusBgClass = 'bg-red-100';
-                        else if (activeZScore < -2 || activeZScore > 1) statusBgClass = 'bg-yellow-100';
-                        else statusBgClass = 'bg-green-50';
-                    }
-                }
-
-                // 3. GENERATE KONTEN BARIS SESUAI 7 KOLOM
-                row.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td class="font-medium truncate">${data.name}</td>
-                    <td>${data.sex === 'male' ? 'L' : 'P'}</td>
-                    <td class="text-center">${ageDisplayForTable}</td>
-                    <td class="text-center">${zScore}</td>
-                    <td id="status_cell_${data.id}" class="${statusBgClass} font-bold">${classificationText}</td>
-                    <td>
-                        <button type="button" class="text-red-500 hover:text-red-700 font-bold text-xs" 
-                            onclick="window.showDeleteModal('${data.id}', '${data.name}', event)">Hapus</button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-        
-        /** Fungsi baru untuk mengatur indeks tabel yang dipilih */
-        window.setTableIndex = function(index) {
-            window.currentTableIndex = index;
-            window.renderChildList();
-        }
-
-
-        /** Memfilter daftar anak. */
-        window.filterChildList = function() {
-            window.renderChildList();
-        }
-
-        /** Loads all child profiles for the current user in real-time. */
-        window.loadChildProfiles = function() {
-            if (!window.userId) return;
-
-            const q = query(collection(db, 'artifacts', appId, 'users', window.userId, 'children'));
-            
-            onSnapshot(q, (snapshot) => {
-                window.allChildProfiles = [];
-                snapshot.docs.forEach(doc => {
-                    window.allChildProfiles.push({ id: doc.id, ...doc.data() });
-                });
-                // Sort profiles by save time (newest first)
-                window.allChildProfiles.sort((a, b) => b.savedAt.toDate() - a.savedAt.toDate());
-
-                window.renderChildList();
-            }, (error) => {
-                console.error("Error listening to documents: ", error);
-                const tbody = document.getElementById('child-list');
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-red-500 p-2">Gagal memuat profil.</td></tr>'; // Updated colspan
-            });
-        }
-        
-        /** Clears the current data and sets a new child profile mode. */
-        window.clearCurrentChild = function() {
-            window.hideDeleteModal();
-            window.hideValidationModal();
-            window.currentChildId = null;
-            
-            // Set input kosong kecuali JK
-            document.getElementById('child-name').value = '';
-            document.getElementById('dob').value = MASK_DEFAULT; // Menggunakan MASK_DEFAULT
-            document.getElementById('sex').value = 'male';
-            document.getElementById('weight').value = '';
-            document.getElementById('height').value = '';
-            
-            window.calculateNutritionStatus();
-            document.getElementById('profile-search').value = ''; // Clear search field
-            window.renderChildList(); // Rerender list
-        }
-        
-        // Start Firebase setup
-        window.setupFirebase();
-
-    </script>
-    <!-- End of Module Script -->
-
+    <!-- Hapus Script Module Firebase, Semua Logika CRUD dipindahkan ke script global -->
 
     <script>
         // Batas Usia Maksimal: 19 tahun * 12 bulan = 228 bulan
         const MAX_AGE_MONTHS = 228;
-
+        const LOCAL_STORAGE_KEY = 'WHO_LMS_CHILD_PROFILES'; // Kunci localStorage
+        
         // --- Variabel Masking TTL ---
         const MASK_DEFAULT = 'HH/BB/TTTT';
         const MASK = '__/__/____';
         const SLOT_IDX = [0,1,3,4,6,7,8,9]; // posisi angka
 
         // --- FUNGSI MASKING TTL ---
-        const el = document.getElementById('dob');
-
-        function setCaret(pos){ requestAnimationFrame(()=> el.setSelectionRange(pos,pos)); }
+        // Karena element 'dob' belum ada saat skrip global dimuat,
+        // event listener harus dipasang setelah window.onload atau di dalam fungsi.
+        // Untuk saat ini, kita deklarasikan variabelnya di sini
+        let el; 
+        
+        function setCaret(pos){ if(el) requestAnimationFrame(()=> el.setSelectionRange(pos,pos)); }
 
         function nextSlot(from){
           for (let i=from; i<el.value.length; i++){
@@ -844,121 +367,111 @@
           return -1;
         }
 
-        // Saat fokus: ganti hh/bb/tttt -> __/__/____
-        el.addEventListener('focus', () => {
-          if (el.value === MASK_DEFAULT) el.value = MASK;
-          // taruh kursor di slot kosong pertama
-          const ns = nextSlot(0);
-          setCaret(ns === -1 ? el.value.length : ns);
-        });
+        function applyMaskingListeners() {
+            el = document.getElementById('dob');
+            if (!el) return;
 
-        // Jika kosongkan lalu keluar: balikin ke hh/bb/tttt
-        el.addEventListener('blur', () => {
-          const isMaskedAndEmpty = el.value.replace(/\//g,'').replace(/_/g,'').length === 0;
-          if (el.value === MASK || isMaskedAndEmpty) {
+            // Pastikan nilai awal diatur (diperlukan karena deklarasi awal di HTML value="HH/BB/TTTT")
             el.value = MASK_DEFAULT;
-          }
-          // Panggil perhitungan setelah blur untuk validasi terakhir
-          window.calculateNutritionStatus(); 
-        });
 
-        // Handler utama pengetikan
-        el.addEventListener('keydown', (e) => {
-          const k = e.key;
-          const start = el.selectionStart;
-          const end = el.selectionEnd;
+            el.addEventListener('focus', () => {
+              if (el.value === MASK_DEFAULT) el.value = MASK;
+              const ns = nextSlot(0);
+              setCaret(ns === -1 ? el.value.length : ns);
+            });
 
-          // Panggil calculateNutritionStatus() untuk update real-time
-          // Dijalankan di requestAnimationFrame agar DOM update duluan
-          requestAnimationFrame(() => window.calculateNutritionStatus());
+            el.addEventListener('blur', () => {
+              const isMaskedAndEmpty = el.value.replace(/\//g,'').replace(/_/g,'').length === 0;
+              if (el.value === MASK || isMaskedAndEmpty) {
+                el.value = MASK_DEFAULT;
+              }
+              window.calculateNutritionStatus(); 
+            });
 
-          // Blokir edit langsung pada "/" (biar "/" tidak hilang)
-          if ((start === 2 || start === 5) && (k === 'Backspace' || k === 'Delete')) {
-            e.preventDefault(); return;
-          }
+            el.addEventListener('keydown', (e) => {
+              const k = e.key;
+              const start = el.selectionStart;
+              const end = el.selectionEnd;
 
-          // Izinkan navigasi
-          const navKeys = ['ArrowLeft','ArrowRight','Home','End','Tab'];
-          if (navKeys.includes(k)) return;
+              requestAnimationFrame(() => window.calculateNutritionStatus());
 
-          // Angka: taruh ke slot "_" berikutnya
-          if (/^\d$/.test(k)) {
-            e.preventDefault();
+              if ((start === 2 || start === 5) && (k === 'Backspace' || k === 'Delete')) {
+                e.preventDefault(); return;
+              }
 
-            // kalau ada selection, hapus isinya dulu (ganti jadi "_")
-            if (end > start){
+              const navKeys = ['ArrowLeft','ArrowRight','Home','End','Tab'];
+              if (navKeys.includes(k)) return;
+
+              if (/^\d$/.test(k)) {
+                e.preventDefault();
+                if (end > start){
+                  let arr = el.value.split('');
+                  for (let i=start; i<end; i++){
+                    if (SLOT_IDX.includes(i)) arr[i] = '_';
+                  }
+                  el.value = arr.join('');
+                }
+
+                let pos = nextSlot(start);
+                if (pos === -1) return;
+
+                let arr = el.value.split('');
+                arr[pos] = k;
+                el.value = arr.join('');
+
+                const after = nextSlot(pos+1);
+                setCaret(after === -1 ? pos+1 : after);
+                return;
+              }
+
+              if (k === 'Backspace') {
+                e.preventDefault();
+                let pos = prevSlot(start);
+                if (pos === -1) return;
+                let arr = el.value.split('');
+                arr[pos] = '_';
+                el.value = arr.join('');
+                setCaret(pos);
+                return;
+              }
+
+              if (k === 'Delete') {
+                e.preventDefault();
+                if (SLOT_IDX.includes(start)){
+                  let arr = el.value.split('');
+                  arr[start] = '_';
+                  el.value = arr.join('');
+                  setCaret(start);
+                }
+                return;
+              }
+
+              e.preventDefault();
+            });
+
+            el.addEventListener('paste', (e) => {
+              e.preventDefault();
+              const text = (e.clipboardData || window.clipboardData).getData('text') || '';
+              const digits = text.replace(/\D/g,'').slice(0,8);
+              if (!digits) return;
+
               let arr = el.value.split('');
-              for (let i=start; i<end; i++){
-                if (SLOT_IDX.includes(i)) arr[i] = '_';
+              let idx = nextSlot(el.selectionStart);
+              if (idx === -1) idx = nextSlot(0);
+              let p = idx;
+              for (let d of digits){
+                if (p === -1) break;
+                arr[p] = d;
+                p = nextSlot(p+1);
               }
               el.value = arr.join('');
-            }
-
-            // target slot = slot kosong pertama dari posisi kursor
-            let pos = nextSlot(start);
-            if (pos === -1) return; // sudah penuh
-
-            let arr = el.value.split('');
-            arr[pos] = k;
-            el.value = arr.join('');
-
-            // lompat ke slot berikutnya, auto-skip "/"
-            const after = nextSlot(pos+1);
-            setCaret(after === -1 ? pos+1 : after);
-            return;
-          }
-
-          // Backspace: kosongkan slot angka sebelumnya dan pindah ke sana
-          if (k === 'Backspace') {
-            e.preventDefault();
-            let pos = prevSlot(start);
-            if (pos === -1) return;
-            let arr = el.value.split('');
-            arr[pos] = '_';
-            el.value = arr.join('');
-            setCaret(pos);
-            return;
-          }
-
-          // Delete: kosongkan slot di posisi kursor (kalau slot angka)
-          if (k === 'Delete') {
-            e.preventDefault();
-            if (SLOT_IDX.includes(start)){
-              let arr = el.value.split('');
-              arr[start] = '_';
-              el.value = arr.join('');
-              setCaret(start);
-            }
-            return;
-          }
-
-          // Blokir semua input non-angka/non-navigasi
-          e.preventDefault();
-        });
-
-        // Jaga agar user tidak bisa paste sembarang: hanya ambil digit
-        el.addEventListener('paste', (e) => {
-          e.preventDefault();
-          const text = (e.clipboardData || window.clipboardData).getData('text') || '';
-          const digits = text.replace(/\D/g,'').slice(0,8); // maksimal 8 digit
-          if (!digits) return;
-
-          let arr = el.value.split('');
-          let idx = nextSlot(el.selectionStart);
-          if (idx === -1) idx = nextSlot(0);
-          let p = idx;
-          for (let d of digits){
-            if (p === -1) break;
-            arr[p] = d;
-            p = nextSlot(p+1);
-          }
-          el.value = arr.join('');
-          setCaret(p === -1 ? 10 : p);
-          // Panggil perhitungan setelah paste
-          window.calculateNutritionStatus(); 
-        });
-
+              setCaret(p === -1 ? 10 : p);
+              window.calculateNutritionStatus(); 
+            });
+        }
+        
         // --- DATA REFERENSI WHO-LMS ---
+        // (Data array LMS lengkap telah dipindahkan ke sini)
 
         // BB/U - Laki-laki (WFA Male 0-60m)
         const WFA_M_LMS = [
@@ -1126,20 +639,388 @@
             [204, 0.659, 21.14, 0.186], [216, 0.706, 21.28, 0.199], [228, 0.729, 21.34, 0.212]
         ];
 
+        // --- PENGGABUNGAN DATA LMS 0-228m ---
+        // Fungsi untuk menghitung LMS pada usia/tinggi tertentu menggunakan data LMS yang disediakan
+        function interpolateLMSPoints(dataPoints, x) {
+            // ... (Fungsi interpolateLMS dari kode lama) ...
+            let p1, p2;
+
+            if (x < dataPoints[0][0]) {
+                p1 = dataPoints[0];
+                p2 = dataPoints[1];
+            } else if (x > dataPoints[dataPoints.length - 1][0]) {
+                p1 = dataPoints[dataPoints.length - 2];
+                p2 = dataPoints[dataPoints.length - 1];
+            } else {
+                for (let i = 0; i < dataPoints.length - 1; i++) {
+                    if (x >= dataPoints[i][0] && x <= dataPoints[i + 1][0]) {
+                        p1 = dataPoints[i];
+                        p2 = dataPoints[i + 1];
+                        break;
+                    }
+                }
+            }
+
+            if (!p1 || !p2) {
+                return { L: 0, M: 0, S: 0 }; 
+            }
+
+            const x1 = p1[0];
+            const L1 = p1[1], M1 = p1[2], S1 = p1[3];
+            const x2 = p2[0];
+            const L2 = p2[1], M2 = p2[2], S2 = p2[3];
+
+            if (x1 === x2) return { L: L1, M: M1, S: S1 };
+
+            const ratio = (x - x1) / (x2 - x1);
+
+            const L = L1 + (L2 - L1) * ratio;
+            const M = M1 + (M2 - M1) * ratio;
+            const S = S1 + (S2 - S1) * ratio;
+
+            return { L, M, S };
+        }
+
+        function generateExtendedLMS(data60, dataPoints) {
+            let extendedData = [...data60];
+            for (let m = 61; m <= MAX_AGE_MONTHS; m++) {
+                const { L, M, S } = interpolateLMSPoints(dataPoints, m);
+                extendedData.push([m, L, M, S]);
+            }
+            return extendedData;
+        }
+
+        const HFA_M_LMS_EXT = generateExtendedLMS(HFA_M_LMS_0_60, HFA_M_LMS_61_228_POINTS);
+        const HFA_F_LMS_EXT = generateExtendedLMS(HFA_F_LMS_0_60, HFA_F_LMS_61_228_POINTS);
+        const BFA_M_LMS_EXT = generateExtendedLMS(BFA_M_LMS_0_60, BFA_M_LMS_61_228_POINTS);
+        const BFA_F_LMS_EXT = generateExtendedLMS(BFA_F_LMS_0_60, BFA_F_LMS_61_228_POINTS);
+
 
         // --- GLOBAL STATE ---
         let currentAgeMonths = 0;
         window.currentZScoreResults = {};
-        window.lmsDataCache = {}; // Cache for LMS data based on index and sex
-        window.currentTableIndex = 'WFA'; // Default index for table view
+        window.lmsDataCache = {}; 
+        window.currentTableIndex = 'WFA'; 
+        window.currentChildId = null;
+        window.pendingDeletionId = null; 
+        window.allChildProfiles = []; 
         
         // UTILITY: Format Date to ISO String (Dipindahkan ke sini agar tersedia global sebelum window.onload)
         window.dateToISO = (date) => date.toISOString().split('T')[0];
 
-        // --- FUNGSI DATE MASKING LAMA (DIHAPUS, DIGANTI EVENT LISTENER DI BAWAH) ---
+        /**
+         * ======================================================================
+         * UI/MODAL & CRUD Functions (Menggunakan localStorage)
+         * ======================================================================
+         */
         
-        // --- FUNGSI MESSAGE BOX UTILITY (GLOBAL) ---
+        /** Menampilkan modal konfirmasi hapus. */
+        window.showDeleteModal = function(docId, name, event) {
+            if (event) event.stopPropagation();
+            window.pendingDeletionId = docId;
+            document.getElementById('modal-child-name').textContent = name;
+            document.getElementById('modal-delete-confirmation-input').value = '';
+            document.getElementById('delete-modal').classList.remove('hidden');
+        }
+
+        /** Menyembunyikan modal konfirmasi hapus. */
+        window.hideDeleteModal = function() {
+            window.pendingDeletionId = null;
+            document.getElementById('delete-modal').classList.add('hidden');
+        }
+
+        /** Menampilkan modal validasi TTL/Usia. */
+        window.showValidationModal = function(title, message) {
+            document.getElementById('validation-modal-title').textContent = title;
+            document.getElementById('validation-modal-message').textContent = message;
+            document.getElementById('validation-modal').classList.remove('hidden');
+        }
+
+        /** Menyembunyikan modal validasi. */
+        window.hideValidationModal = function() {
+            document.getElementById('validation-modal').classList.add('hidden');
+        }
+        
+        /** Utility: Converts YYYY-MM-DD to DD/MM/YYYY */
+        window.dateToDMY = (isoDate) => {
+            if (!isoDate) return '';
+            try {
+                const [year, month, day] = isoDate.split('-');
+                return `${day}/${month}/${year}`;
+            } catch {
+                return '';
+            }
+        }
+        
+        /** Mengambil nilai tanggal lahir dari input date tunggal (tipe text, format DD/MM/YYYY). */
+        window.getDOBString = function() {
+            const dobInput = document.getElementById('dob').value;
+            const cleanDobInput = dobInput.includes('_') ? '' : dobInput;
+            
+            if (!cleanDobInput || cleanDobInput === '//' || cleanDobInput === MASK_DEFAULT) return null;
+
+            // Expecting DD/MM/YYYY format
+            const parts = cleanDobInput.split('/');
+            if (parts.length !== 3) return null;
+
+            const [dayStr, monthStr, yearStr] = parts;
+            const day = parseInt(dayStr, 10);
+            const month = parseInt(monthStr, 10);
+            const year = parseInt(yearStr, 10);
+
+            if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+            if (month < 1 || month > 12 || year < 1900 || year > 2100) return null;
+
+            const dateCheck = new Date(year, month - 1, day); 
+
+            if (dateCheck.getFullYear() !== year || dateCheck.getMonth() !== month - 1 || dateCheck.getDate() !== day) {
+                return null;
+            }
+
+            const paddedMonth = String(month).padStart(2, '0');
+            const paddedDay = String(day).padStart(2, '0');
+            
+            return `${year}-${paddedMonth}-${paddedDay}`;
+        }
+
+
+        /** Mengambil data input dari form. */
+        window.getFormData = function() {
+            const name = document.getElementById('child-name').value;
+            const dob = window.getDOBString(); // Menggunakan fungsi baru untuk parsing D/M/Y
+            const sex = document.getElementById('sex').value;
+            const weight = parseFloat(document.getElementById('weight').value);
+            const height = parseFloat(document.getElementById('height').value);
+            
+            if (!dob) return { name, dob: null, sex, weight, height };
+            
+            return { name, dob, sex, weight, height };
+        }
+        
+        /** Loads all child profiles from localStorage. */
+        window.loadChildProfiles = function() {
+            try {
+                const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+                window.allChildProfiles = storedData ? JSON.parse(storedData) : [];
+                
+                // Sort profiles by save time (newest first - menggunakan Date object untuk sorting, lalu diubah ke string saat save)
+                window.allChildProfiles.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+
+                window.renderChildList();
+            } catch (e) {
+                console.error("Error loading profiles from localStorage: ", e);
+                window.allChildProfiles = [];
+                const tbody = document.getElementById('child-list');
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-red-500 p-2">Gagal memuat profil dari penyimpanan lokal.</td></tr>'; 
+            }
+        }
+        
+        /** Saves the current child profile data to localStorage. */
+        window.saveChildProfile = function() {
+            
+            window.hideDeleteModal();
+            window.hideValidationModal();
+
+            // 1. Ambil data form
+            const formData = window.getFormData();
+            const { name, dob, weight, height } = formData;
+            
+            let errorMessage = '';
+
+            // 2. Validasi input dasar
+            const nameValue = document.getElementById('child-name').value.trim();
+            const dobValue = document.getElementById('dob').value;
+            const weightValue = document.getElementById('weight').value.trim();
+            const heightValue = document.getElementById('height').value.trim();
+
+            if (!nameValue) { errorMessage = 'Nama Anak harus diisi.'; }
+            else if (dobValue === MASK || dobValue === MASK_DEFAULT || dobValue === '//' || !dob) { 
+                // KASUS 1: TTL Invalid atau Belum Lengkap/diisi
+                window.showValidationModal('Tanggal Lahir Tidak Valid', 'Pastikan Tanggal Lahir diisi lengkap dengan format HH/BB/TTTT yang valid. Cek tanggal, bulan, dan tahun.');
+                return;
+            }
+            else if (weightValue === '' || isNaN(weight) || weight <= 0) { errorMessage = 'Berat Badan (BB) harus diisi dengan nilai yang valid (> 0).'; }
+            else if (heightValue === '' || isNaN(height) || height <= 0) { errorMessage = 'Tinggi/Panjang Badan (TB/PB) harus diisi dengan nilai yang valid (> 0).'; }
+            
+            if (errorMessage) {
+                window.showMessage(`Gagal Simpan: ${errorMessage}`, 'danger');
+                return;
+            }
+
+            // 3. Cek Batas Usia
+            const ageResult = calculateAge(dob);
+            const currentAgeMonths = ageResult ? ageResult.totalMonths : 0;
+            const ageDisplayStatus = ageResult ? ageResult.display : 'Format Tgl Salah / Belum Lengkap';
+            
+            if (currentAgeMonths > MAX_AGE_MONTHS) {
+                 // KASUS 2: Usia di atas batas
+                window.showValidationModal('Batas Usia Terlampaui', `Usia anak (${ageDisplayStatus}) melebihi batas maksimum WHO-LMS (19 tahun / ${MAX_AGE_MONTHS} bulan). Data tidak akan disimpan.`);
+                return; 
+            }
+            
+            // 4. Paksa perhitungan status gizi terbaru
+            window.calculateNutritionStatus(); 
+
+            // 5. Ambil hasil status gizi dari global state setelah perhitungan
+            const lastStatus = window.currentZScoreResults; 
+            
+            // 6. Validasi hasil status gizi
+            const validStatus = Object.values(lastStatus).some(res => res && res.zScore && res.zScore !== 'N/A');
+            
+            if (!validStatus) {
+                window.showMessage('Gagal Simpan: Status gizi belum berhasil dihitung. Periksa kembali input Usia dan Tinggi/Panjang Badan.', 'danger');
+                return;
+            }
+
+            // --- Logika Penyimpanan LocalStorage ---
+            const profiles = window.allChildProfiles;
+            const docId = window.currentChildId || Date.now().toString();
+            
+            const existingIndex = profiles.findIndex(p => p.id === docId);
+            
+            // Tentukan primary index default (WFA) atau yang terakhir dipilih
+            const primaryIndex = existingIndex !== -1
+                                ? profiles[existingIndex].primaryIndex || 'WFA'
+                                : 'WFA';
+
+            const childData = { 
+                id: docId,
+                name: nameValue, 
+                dob: dob,
+                sex: formData.sex,
+                weight: weight,
+                height: height,
+                lastStatus: lastStatus, 
+                primaryIndex: primaryIndex, 
+                savedAt: new Date().toISOString() // Simpan sebagai string ISO
+            };
+            
+            if (existingIndex !== -1) {
+                // Update
+                profiles[existingIndex] = childData;
+            } else {
+                // New profile, push to start of array for newest first view
+                profiles.unshift(childData);
+            }
+            
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(profiles));
+                window.allChildProfiles = profiles; // Update global cache
+                window.currentChildId = null; 
+                
+                window.showMessage('Profil anak berhasil disimpan!', 'success');
+                window.clearCurrentChild();
+                window.renderChildList(); // Render setelah update
+
+            } catch (e) {
+                console.error("Error saving document to localStorage: ", e);
+                window.showMessage('Gagal Simpan ke Penyimpanan Lokal.', 'danger');
+            }
+        }
+        
+        /** Updates the primary index for a saved profile in localStorage. */
+        window.updateProfilePrimaryIndex = function(docId, index, event) {
+            
+            if (event) event.stopPropagation();
+            window.hideDeleteModal();
+            window.hideValidationModal();
+            
+            const profiles = window.allChildProfiles;
+            const profileIndex = profiles.findIndex(p => p.id === docId);
+
+            if (profileIndex !== -1) {
+                profiles[profileIndex].primaryIndex = index;
+                try {
+                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(profiles));
+                    window.renderChildList();
+                } catch(e) {
+                    console.error("Failed to update primary index in localStorage:", e);
+                    window.showMessage('Gagal update indeks utama di penyimpanan lokal.', 'danger');
+                }
+            }
+        }
+
+        /** Memuat data anak yang dipilih ke form. */
+        window.loadChildData = function(id, data) {
+            window.hideDeleteModal();
+            window.hideValidationModal();
+            window.currentChildId = id;
+            document.getElementById('child-name').value = data.name;
+
+            document.getElementById('dob').value = window.dateToDMY(data.dob); 
+
+            document.getElementById('sex').value = data.sex;
+            document.getElementById('weight').value = parseFloat(data.weight);
+            document.getElementById('height').value = parseFloat(data.height);
+
+            window.calculateNutritionStatus(); 
+
+            window.showMessage('Profil ' + data.name + ' berhasil dimuat.', 'info');
+        }
+        
+        /** Melakukan proses penghapusan setelah konfirmasi MODAL. */
+        window.confirmDeletion = function() {
+            const docId = window.pendingDeletionId;
+            if (!docId) return;
+
+            const input = document.getElementById('modal-delete-confirmation-input').value;
+            if (input !== 'HAPUS') {
+                document.getElementById('modal-delete-confirmation-input').classList.add('border-danger');
+                document.getElementById('modal-delete-confirmation-input').placeholder = "Konfirmasi tidak valid. KETIK 'HAPUS'!";
+                return;
+            }
+            
+            window.hideDeleteModal(); 
+            
+            const profiles = window.allChildProfiles;
+            const updatedProfiles = profiles.filter(p => p.id !== docId);
+
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedProfiles));
+                window.allChildProfiles = updatedProfiles; // Update cache
+                
+                if (window.currentChildId === docId) {
+                    window.clearCurrentChild();
+                }
+
+                window.showMessage('Profil berhasil dihapus.', 'success');
+                window.renderChildList(); 
+                
+            } catch (e) {
+                console.error("Error deleting document from localStorage: ", e);
+                window.showMessage('Gagal menghapus profil dari penyimpanan lokal.', 'danger');
+            } finally {
+                 window.pendingDeletionId = null;
+                 setTimeout(() => {
+                     document.getElementById('message-box').innerHTML = 'Masukkan data antropometri anak (Nama, TTL, BB, TB/PB) untuk memulai perhitungan status gizi.';
+                     document.getElementById('message-box').className = 'p-3 text-sm text-green-800 bg-green-100 border-l-4 border-success rounded-lg';
+                 }, 3000);
+            }
+        }
+        
+        /** Clears the current data and sets a new child profile mode. */
+        window.clearCurrentChild = function() {
+            window.hideDeleteModal();
+            window.hideValidationModal();
+            window.currentChildId = null;
+            
+            // Set input kosong kecuali JK
+            document.getElementById('child-name').value = '';
+            document.getElementById('dob').value = MASK_DEFAULT; // Menggunakan MASK_DEFAULT
+            document.getElementById('sex').value = 'male';
+            document.getElementById('weight').value = '';
+            document.getElementById('height').value = '';
+            
+            window.calculateNutritionStatus();
+            document.getElementById('profile-search').value = ''; // Clear search field
+            window.renderChildList(); // Rerender list
+        }
+
+        // --- FUNGSI UTILITY GLOBAL NON-CRUD ---
+        
+        /** Mengubah pesan kecil di bawah grid hasil */
         function showMessage(text, type = 'info') {
+            // ... (Fungsi showMessage tetap sama)
             const messageBox = document.getElementById('message-box');
             let bgClass, borderClass, textClass;
 
@@ -1171,304 +1052,12 @@
             }, 3000);
         }
         window.showMessage = showMessage;
-        
-        // --- FUNGSI COPY DATA (BARU) ---
-        window.copyFilteredDataToClipboard = function() {
-            const index = window.currentTableIndex;
-            const profiles = window.allChildProfiles;
 
-            if (profiles.length === 0) {
-                window.showMessage('Tidak ada data profil yang tersimpan untuk disalin.', 'warning');
-                return;
-            }
-
-            // Headers
-            const headerIndex = {
-                'WFA': 'BB/U (Z)',
-                'HFA': 'TB/U (Z)',
-                'WFL': 'BB/TB (Z)',
-                'BFA': 'IMT/U (Z)'
-            };
-
-            let tsv = ['No', 'Nama', 'JK', 'Tgl Lahir (HH/BB/TTTT)', 'BB (kg)', 'TB/PB (cm)', 'Umur', headerIndex[index], 'Status'].join('\t') + '\n';
-            
-            profiles.forEach((data, i) => {
-                const status = data.lastStatus[index] || {};
-                const zScore = status.zScore === 'N/A' || typeof status.zScore !== 'number' ? 'N/A' : status.zScore.toFixed(2);
-                const classification = status.classification || 'N/A';
-                
-                // Konversi tanggal ISO (YYYY-MM-DD) kembali ke HH/BB/TTTT untuk display
-                const dobDisplay = window.dateToDMY(data.dob); 
-                const ageResultForTable = calculateAge(data.dob);
-                const ageDisplayForTable = ageResultForTable ? ageResultForTable.display : 'Tgl Salah';
-                
-                const row = [
-                    i + 1,
-                    data.name,
-                    data.sex === 'male' ? 'L' : 'P',
-                    dobDisplay,
-                    data.weight,
-                    data.height,
-                    ageDisplayForTable,
-                    zScore,
-                    classification
-                ].join('\t');
-                
-                tsv += row + '\n';
-            });
-
-            // Menyalin ke clipboard menggunakan metode fallback (document.execCommand)
-            let success = false;
-            let tempElement = document.createElement('textarea');
-            tempElement.value = tsv;
-            tempElement.setAttribute('readonly', '');
-            tempElement.style.position = 'absolute';
-            tempElement.style.left = '-9999px';
-            document.body.appendChild(tempElement);
-            tempElement.select();
-            
-            try {
-                // Gunakan document.execCommand('copy') karena navigator.clipboard diblokir
-                success = document.execCommand('copy');
-            } catch (err) {
-                console.error('Gagal menyalin:', err);
-                success = false;
-            } finally {
-                document.body.removeChild(tempElement);
-            }
-
-            if (success) {
-                window.showMessage(`Berhasil menyalin ${profiles.length} baris data ${index} ke clipboard. Siap ditempel di Excel!`, 'success');
-            } else {
-                window.showMessage('Gagal menyalin data ke clipboard. Peramban (browser) Anda mungkin memblokir fungsi ini.', 'danger');
-            }
-        };
-        
-
-        // --- FUNGSI AKORDION (GLOBAL) ---
-        window.toggleAccordion = function(contentId, iconId) {
-            const content = document.getElementById(contentId);
-            const icon = document.getElementById(iconId);
-            if (content.style.maxHeight === '0px' || !content.style.maxHeight) {
-                // Buka akordion
-                content.style.maxHeight = content.scrollHeight + "px";
-                icon.classList.add('rotate-180');
-            } else {
-                // Tutup akordion
-                content.style.maxHeight = '0px';
-                icon.classList.remove('rotate-180');
-            }
-        }
-        // --- END FUNGSI AKORDION ---
-        
-        // --- FUNGSI INTERPOLASI CUBIC SPLINE (untuk 61-228m) ---
-        // Fungsi untuk menghitung LMS pada usia/tinggi tertentu menggunakan data LMS yang disediakan
-        function interpolateLMS(dataPoints, x) {
-            let p1, p2;
-
-            // Kasus 1: Nilai x berada di luar batas (ekstrapolasi)
-            if (x < dataPoints[0][0]) {
-                p1 = dataPoints[0];
-                p2 = dataPoints[1];
-            } else if (x > dataPoints[dataPoints.length - 1][0]) {
-                p1 = dataPoints[dataPoints.length - 2];
-                p2 = dataPoints[dataPoints.length - 1];
-            } else {
-                // Kasus 2: Nilai x berada di dalam batas (interpolasi linier)
-                for (let i = 0; i < dataPoints.length - 1; i++) {
-                    if (x >= dataPoints[i][0] && x <= dataPoints[i + 1][0]) {
-                        p1 = dataPoints[i];
-                        p2 = dataPoints[i + 1];
-                        break;
-                    }
-                }
-            }
-
-            if (!p1 || !p2) {
-                // Jika data point tidak ditemukan (seharusnya tidak terjadi jika batas sudah dicek)
-                return { L: 0, M: 0, S: 0 }; 
-            }
-
-            const x1 = p1[0];
-            const L1 = p1[1], M1 = p1[2], S1 = p1[3];
-            const x2 = p2[0];
-            const L2 = p2[1], M2 = p2[2], S2 = p2[3];
-
-            if (x1 === x2) return { L: L1, M: M1, S: S1 };
-
-            const ratio = (x - x1) / (x2 - x1);
-
-            const L = L1 + (L2 - L1) * ratio;
-            const M = M1 + (M2 - M1) * ratio;
-            const S = S1 + (S2 - S1) * ratio;
-
-            return { L, M, S };
-        }
-
-        // --- PENGGABUNGAN DATA LMS 0-228m ---
-        
-        let HFA_M_LMS_EXT = HFA_M_LMS_0_60;
-        let HFA_F_LMS_EXT = HFA_F_LMS_0_60;
-        let BFA_M_LMS_EXT = BFA_M_LMS_0_60;
-        let BFA_F_LMS_EXT = BFA_F_LMS_0_60;
-
-        // Tambahkan data 61-228m (WHO Reference) menggunakan interpolasi
-        function generateExtendedLMS(data60, dataPoints) {
-            let extendedData = [...data60];
-            for (let m = 61; m <= MAX_AGE_MONTHS; m++) {
-                const { L, M, S } = interpolateLMS(dataPoints, m);
-                extendedData.push([m, L, M, S]);
-            }
-            return extendedData;
-        }
-
-        HFA_M_LMS_EXT = generateExtendedLMS(HFA_M_LMS_0_60, HFA_M_LMS_61_228_POINTS);
-        HFA_F_LMS_EXT = generateExtendedLMS(HFA_F_LMS_0_60, HFA_F_LMS_61_228_POINTS);
-        BFA_M_LMS_EXT = generateExtendedLMS(BFA_M_LMS_0_60, BFA_M_LMS_61_228_POINTS);
-        BFA_F_LMS_EXT = generateExtendedLMS(BFA_F_LMS_0_60, BFA_F_LMS_61_228_POINTS);
-
-
-        // --- UTILITY Z-SCORE DAN KLASIFIKASI ---
-
-        /** Menghitung Z-score menggunakan metode LMS. */
-        function calculateZScore(measurement, L, M, S) {
-            if (L === 0) {
-                // Rumus untuk L = 0 (Normal Distribution)
-                return (Math.log(measurement / M)) / S;
-            } else {
-                // Rumus untuk L != 0 (Box-Cox Transformation)
-                return (Math.pow(measurement / M, L) - 1) / (L * S);
-            }
-        }
-
-        /** Mendapatkan klasifikasi status gizi berdasarkan Z-score. */
-        function getClassification(zScore, index) {
-            if (zScore === 'N/A' || typeof zScore !== 'number') return { classification: 'N/A', color: 'bg-gray-100' };
-
-            let classification = 'Normal';
-            let color = 'bg-success';
-
-            if (index === 'WFA' || index === 'WFL' || index === 'BFA') { // BB/U, BB/TB, IMT/U
-                if (zScore < -3) { classification = 'Sangat Kurang/Gizi Buruk'; color = 'bg-danger'; }
-                else if (zScore < -2) { classification = 'Kurang/Gizi Kurang'; color = 'bg-warning'; }
-                else if (zScore > 3) { classification = 'Obesitas'; color = 'bg-danger'; }
-                else if (zScore > 2) { classification = 'Gizi Lebih/Gemuk'; color = 'bg-warning'; }
-                else if (zScore > 1) { classification = 'Risiko Gizi Lebih'; color = 'bg-info'; }
-            } else if (index === 'HFA') { // TB/U (Stunting)
-                if (zScore < -3) { classification = 'Sangat Pendek (Severe Stunting)'; color = 'bg-danger'; }
-                else if (zScore < -2) { classification = 'Pendek (Stunting)'; color = 'bg-warning'; }
-                else if (zScore > 3) { classification = 'Tinggi'; color = 'bg-info'; }
-            }
-            return { classification, color };
-        }
-        
-        /** Mengambil nilai L, M, S dari tabel LMS berdasarkan usia/tinggi. */
-        function getLMS(index, sex, ageMonths, heightCm) {
-            let data = [];
-            let xValue; 
-            let key;
-
-            // 1. Tentukan set data yang akan digunakan
-            if (index === 'WFA' || index === 'HFA' || index === 'BFA') {
-                xValue = Math.floor(ageMonths);
-                key = `${index}_${sex}_${xValue}`;
-                if (sex === 'male') {
-                    if (index === 'WFA') data = WFA_M_LMS;
-                    else if (index === 'HFA') data = HFA_M_LMS_EXT;
-                    else if (index === 'BFA') data = BFA_M_LMS_EXT;
-                } else {
-                    if (index === 'WFA') data = WFA_F_LMS;
-                    else if (index === 'HFA') data = HFA_F_LMS_EXT;
-                    else if (index === 'BFA') data = BFA_F_LMS_EXT;
-                }
-                
-                // Cek batas usia
-                if ((index === 'WFA' || index === 'WFL') && ageMonths > 60) {
-                    return null; // BB/U dan BB/TB tidak berlaku > 60 bulan
-                }
-                if (ageMonths > MAX_AGE_MONTHS) {
-                    return null; // Indeks berbasis usia tidak berlaku > 228 bulan
-                }
-
-            } else if (index === 'WFL') { // BB/TB
-                xValue = Math.round(heightCm * 2) / 2; // Pembulatan ke 0.5cm terdekat
-                key = `${index}_${sex}_${xValue}`;
-                if (sex === 'male') data = WFL_M_LMS;
-                else data = WFL_F_LMS;
-
-                // Cek batas tinggi/panjang (WHO 0-5 tahun menggunakan batas 45-110cm)
-                if (heightCm < 45 || heightCm > 110 || ageMonths > 60) {
-                     return null; 
-                }
-            }
-
-            // Cek cache (opsional, untuk optimasi)
-            if (window.lmsDataCache[key]) {
-                return window.lmsDataCache[key];
-            }
-            
-            // 2. Cari data di tabel (Linear Interpolation)
-            // Cari data di tabel (menggunakan floor untuk umur bulanan atau round untuk tinggi/panjang)
-            const row = data.find(r => r[0] === xValue);
-
-            if (row) {
-                const result = { L: row[1], M: row[2], S: row[3] };
-                window.lmsDataCache[key] = result;
-                return result;
-            }
-
-            // Jika tidak ditemukan dalam tabel (misalnya, interpolasi untuk usia 61-228 sudah dilakukan di HFA_M_LMS_EXT, dst)
-            // Untuk WFL (45-110), jika tidak ditemukan, berarti out of range
-            return null;
-        }
-
-        // --- FUNGSI UTAMA KALKULASI ---
-
-        /** Menghitung usia anak dari tanggal lahir ke tanggal hari ini. */
-        function calculateAge(dobString) {
-            const dob = new Date(dobString);
-            const now = new Date();
-
-            if (isNaN(dob.getTime())) {
-                return null;
-            }
-
-            // Hitung selisih total hari
-            const diffTime = Math.abs(now - dob);
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-            // Hitung Bulan dan Hari untuk display
-            const years = now.getFullYear() - dob.getFullYear();
-            const months = now.getMonth() - dob.getMonth() + (years * 12);
-
-            let day = now.getDate() - dob.getDate();
-            let preciseMonths = months;
-
-            if (day < 0) {
-                // Sesuaikan bulan dan hari (misalnya dari 10 Maret ke 10 April = 1 bulan, 0 hari)
-                const lastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-                day += lastMonth.getDate();
-                preciseMonths -= 1;
-            }
-
-            // Hitung usia desimal (WHO-NCHS menggunakan usia desimal terdekat ke 0.01)
-            const daysInMonth = (new Date(now.getFullYear(), now.getMonth() + 1, 0)).getDate();
-            const decimalMonths = preciseMonths + (day / daysInMonth);
-            
-            // Menghitung bulan dan hari sisa yang ditampilkan
-            const displayMonths = Math.floor(decimalMonths);
-            const displayDays = Math.round((decimalMonths - displayMonths) * 30.4375); // Rata-rata hari per bulan
-
-            return {
-                totalMonths: parseFloat(decimalMonths.toFixed(2)),
-                display: `${displayMonths} bulan ${displayDays} hari`
-            };
-        }
-
-        /** Fungsi utama yang dipanggil saat ada perubahan input. */
+        /** Fungsi Utama Perhitungan Status Gizi */
         window.calculateNutritionStatus = function() {
-            window.hideDeleteModal(); // Pastikan konfirmasi hapus dibatalkan
-            window.hideValidationModal(); // Sembunyikan modal validasi jika ada
+            // ... (Fungsi calculateNutritionStatus tetap sama, hanya memanggil fungsi global)
+            window.hideDeleteModal(); 
+            window.hideValidationModal(); 
             
             const formData = window.getFormData();
             const dobString = formData.dob;
@@ -1479,15 +1068,12 @@
             const ageDisplayBox = document.getElementById('age-display');
             const resultsGrid = document.getElementById('results-grid');
             
-            // Reset UI for calculation part
             resultsGrid.innerHTML = '';
             window.currentZScoreResults = {};
             
             let validForCalc = true;
             let displayWarning = false;
 
-            // 1. Validasi Input Dasar
-            // Ambil nilai dari DOM secara langsung untuk cek kekosongan
             const nameValue = document.getElementById('child-name').value.trim();
             const dobValue = document.getElementById('dob').value;
             const weightValue = document.getElementById('weight').value.trim();
@@ -1495,11 +1081,9 @@
 
             if (!nameValue) { validForCalc = false; displayWarning = true; }
             else if (dobValue === MASK || dobValue === MASK_DEFAULT || dobValue === '//' || !dobString) { 
-                // KASUS 1: TTL Invalid atau Belum Lengkap/diisi
                 if (dobValue.replace(/_/g, '').length === 10) {
-                     window.showValidationModal('Tanggal Lahir Tidak Valid', 'Pastikan Tanggal Lahir diisi lengkap dengan format HH/BB/TTTT yang valid (misal: 01/01/2020). Cek kombinasi Hari, Bulan, dan Tahun.');
+                     // Ini akan ditangani oleh modal saat save, disini kita hanya mencegah kalkulasi.
                 } else if (dobValue !== MASK_DEFAULT) {
-                    // Jika user sudah mulai mengetik tapi belum lengkap, jangan tampilkan modal, cukup pesan peringatan umum.
                     displayWarning = true;
                 } else {
                      displayWarning = true;
@@ -1512,9 +1096,8 @@
             
             const ageResult = calculateAge(dobString);
             
-            // Simpan status usia ke dalam elemen tersembunyi
             const ageDisplayStatus = ageResult ? ageResult.display : 'Format Tgl Salah / Belum Lengkap';
-            if (ageDisplayBox) ageDisplayBox.textContent = ageDisplayStatus; // Simpan di background
+            if (ageDisplayBox) ageDisplayBox.textContent = ageDisplayStatus; 
 
             if (ageResult) {
                 currentAgeMonths = ageResult.totalMonths;
@@ -1522,9 +1105,7 @@
                 currentAgeMonths = 0;
             }
 
-            // 2. Cek Batas Usia
             if (!validForCalc) {
-                 // Hanya tampilkan peringatan input jika data antropometri kosong (Non-TTL error)
                 if (displayWarning) {
                     window.showMessage('PERINGATAN: Pastikan semua data antropometri (Nama, TTL, BB, TB/PB) sudah terisi dan valid.', 'danger');
                 }
@@ -1533,16 +1114,12 @@
             }
             
             if (currentAgeMonths > MAX_AGE_MONTHS) {
-                 // KASUS 2: Usia di atas batas
-                window.showValidationModal('Batas Usia Terlampaui', `Usia anak (${ageDisplayStatus}) melebihi batas maksimum WHO-LMS (19 tahun / ${MAX_AGE_MONTHS} bulan). Perhitungan Z-score dihentikan.`);
+                // Jangan tampilkan modal di sini, biarkan modal muncul saat tombol SIMPAN ditekan
                 window.currentZScoreResults = {};
                 window.updateVisualization();
                 return; 
             }
 
-            // 3. Lanjutkan dengan Perhitungan Z-score (Hanya jika lolos semua validasi)
-
-            // Array Indeks untuk dihitung
             const indexes = ['WFA', 'HFA', 'WFL', 'BFA'];
             const results = {};
             let allNA = true;
@@ -1577,16 +1154,227 @@
 
             window.currentZScoreResults = results;
             renderResults(results);
-            window.updateVisualization(); // Update visualization after calculation
+            window.updateVisualization(); 
 
-            // Reset pesan ke default jika perhitungan berhasil
             if (!allNA) {
                 document.getElementById('message-box').innerHTML = 'Masukkan data antropometri anak (Nama, TTL, BB, TB/PB) untuk memulai perhitungan status gizi.';
                 document.getElementById('message-box').className = 'p-3 text-sm text-green-800 bg-green-100 border-l-4 border-success rounded-lg';
             }
         }
+        
+        /** Memfilter daftar anak. */
+        window.filterChildList = function() {
+            window.renderChildList();
+        }
 
-        /** Mendapatkan judul indeks yang ramah pengguna. */
+        /** Merender daftar anak ke dalam tabel. */
+        window.renderChildList = function() {
+            // ... (Fungsi renderChildList tetap sama, hanya memanggil fungsi global)
+            window.hideDeleteModal(); 
+            window.hideValidationModal();
+            const searchText = document.getElementById('profile-search').value.toLowerCase();
+            const selectedIndex = window.currentTableIndex; 
+            
+            const filteredProfiles = window.allChildProfiles.filter(profile => 
+                profile.name.toLowerCase().includes(searchText)
+            );
+            
+            const tbody = document.getElementById('child-list');
+            const thead = document.getElementById('child-list-header');
+
+            const indexTitles = {
+                'WFA': 'BB/U (Z-score)',
+                'HFA': 'TB/U (Z-score)',
+                'WFL': 'BB/TB (Z-score)',
+                'BFA': 'IMT/U (Z-score)'
+            };
+
+            const indexMap = ['WFA', 'HFA', 'WFL', 'BFA'];
+
+            thead.innerHTML = `
+                <th class="p-1">No</th>
+                <th class="p-1">Nama</th>
+                <th class="p-1">JK</th>
+                <th class="p-1">Umur</th>
+                <th class="p-1">${indexTitles[selectedIndex]}</th>
+                <th class="p-1">Status</th>
+                <th class="p-1">Aksi</th>
+            `;
+            
+            tbody.innerHTML = '';
+            
+            if (filteredProfiles.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-500 p-2">Tidak ada profil yang cocok atau belum tersimpan.</td></tr>';
+                return;
+            }
+            
+            const getZScoreDisplay = (res) => res?.zScore !== undefined ? (res.zScore === 'N/A' ? 'N/A' : res.zScore.toFixed(2)) : 'N/A';
+            const getStatusKategori = (res) => res?.classification || 'N/A';
+
+            filteredProfiles.forEach((data, index) => {
+                const status = data.lastStatus || {};
+                const activeStatus = status[selectedIndex] || {};
+                const zScore = getZScoreDisplay(activeStatus);
+                const classificationText = getStatusKategori(activeStatus);
+                const activeZScore = activeStatus?.zScore;
+                const ageResultForTable = calculateAge(data.dob); 
+                const ageDisplayForTable = ageResultForTable ? ageResultForTable.display : 'Tgl Salah';
+
+                const row = document.createElement('tr');
+                row.className = 'border-t hover:bg-gray-50 cursor-pointer';
+                
+                row.onclick = (e) => {
+                    if (e.target.tagName !== 'BUTTON' && e.target.type !== 'radio' && e.target.tagName !== 'INPUT') {
+                        window.loadChildData(data.id, data);
+                    }
+                };
+                
+                let statusBgClass = 'bg-gray-100'; 
+                if (activeZScore !== 'N/A' && typeof activeZScore === 'number') {
+                    if (selectedIndex === 'HFA') { 
+                        if (activeZScore < -3) statusBgClass = 'bg-red-100';
+                        else if (activeZScore < -2) statusBgClass = 'bg-yellow-100';
+                        else statusBgClass = 'bg-green-50';
+                    } else { 
+                        if (activeZScore < -3 || activeZScore > 2) statusBgClass = 'bg-red-100';
+                        else if (activeZScore < -2 || activeZScore > 1) statusBgClass = 'bg-yellow-100';
+                        else statusBgClass = 'bg-green-50';
+                    }
+                }
+
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td class="font-medium truncate">${data.name}</td>
+                    <td>${data.sex === 'male' ? 'L' : 'P'}</td>
+                    <td class="text-center">${ageDisplayForTable}</td>
+                    <td class="text-center">${zScore}</td>
+                    <td id="status_cell_${data.id}" class="${statusBgClass} font-bold">${classificationText}</td>
+                    <td>
+                        <button type="button" class="text-red-500 hover:text-red-700 font-bold text-xs" 
+                            onclick="window.showDeleteModal('${data.id}', '${data.name}', event)">Hapus</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // --- FUNGSI INTERPOLASI, ZSCORE, RENDER HASIL (tetap sama) ---
+
+        function calculateZScore(measurement, L, M, S) {
+            if (L === 0) {
+                return (Math.log(measurement / M)) / S;
+            } else {
+                return (Math.pow(measurement / M, L) - 1) / (L * S);
+            }
+        }
+        
+        /** Mendapatkan klasifikasi status gizi berdasarkan Z-score. */
+        function getClassification(zScore, index) {
+            let classification = 'N/A';
+            let color = 'bg-gray-100';
+
+            if (typeof zScore === 'number' && zScore !== 'N/A') {
+                classification = 'Normal';
+                color = 'bg-green-50'; // Warna dasar untuk Normal
+
+                if (index === 'WFA' || index === 'WFL' || index === 'BFA') { // BB/U, BB/TB, IMT/U
+                    if (zScore < -3) { classification = 'Sangat Kurang/Gizi Buruk'; color = 'bg-danger'; }
+                    else if (zScore < -2) { classification = 'Kurang/Gizi Kurang'; color = 'bg-warning'; }
+                    else if (zScore > 3) { classification = 'Obesitas'; color = 'bg-danger'; }
+                    else if (zScore > 2) { classification = 'Gizi Lebih/Gemuk'; color = 'bg-warning'; }
+                    else if (zScore > 1) { classification = 'Risiko Gizi Lebih'; color = 'bg-info'; }
+                } else if (index === 'HFA') { // TB/U (Stunting)
+                    if (zScore < -3) { classification = 'Sangat Pendek (Severe Stunting)'; color = 'bg-danger'; }
+                    else if (zScore < -2) { classification = 'Pendek (Stunting)'; color = 'bg-warning'; }
+                    else if (zScore > 3) { classification = 'Tinggi'; color = 'bg-info'; }
+                }
+            }
+            return { classification, color };
+        }
+        
+        function getLMS(index, sex, ageMonths, heightCm) {
+            let data = [];
+            let xValue; 
+            let key;
+
+            if (index === 'WFA' || index === 'HFA' || index === 'BFA') {
+                xValue = Math.floor(ageMonths);
+                key = `${index}_${sex}_${xValue}`;
+                if (sex === 'male') {
+                    if (index === 'WFA') data = WFA_M_LMS;
+                    else if (index === 'HFA') data = HFA_M_LMS_EXT;
+                    else if (index === 'BFA') data = BFA_M_LMS_EXT;
+                } else {
+                    if (index === 'WFA') data = WFA_F_LMS;
+                    else if (index === 'HFA') data = HFA_F_LMS_EXT;
+                    else if (index === 'BFA') data = BFA_F_LMS_EXT;
+                }
+                
+                if ((index === 'WFA' || index === 'WFL') && ageMonths > 60) {
+                    return null; 
+                }
+                if (ageMonths > MAX_AGE_MONTHS) {
+                    return null; 
+                }
+
+            } else if (index === 'WFL') { 
+                xValue = Math.round(heightCm * 2) / 2; 
+                key = `${index}_${sex}_${xValue}`;
+                if (sex === 'male') data = WFL_M_LMS;
+                else data = WFL_F_LMS;
+
+                if (heightCm < 45 || heightCm > 110 || ageMonths > 60) {
+                     return null; 
+                }
+            }
+
+            if (window.lmsDataCache[key]) {
+                return window.lmsDataCache[key];
+            }
+            
+            const row = data.find(r => r[0] === xValue);
+
+            if (row) {
+                const result = { L: row[1], M: row[2], S: row[3] };
+                window.lmsDataCache[key] = result;
+                return result;
+            }
+
+            return null;
+        }
+        function calculateAge(dobString) { 
+            const dob = new Date(dobString);
+            const now = new Date();
+
+            if (isNaN(dob.getTime())) {
+                return null;
+            }
+
+            const diffTime = Math.abs(now - dob);
+            
+            const years = now.getFullYear() - dob.getFullYear();
+            const months = now.getMonth() - dob.getMonth() + (years * 12);
+
+            let day = now.getDate() - dob.getDate();
+            let preciseMonths = months;
+
+            if (day < 0) {
+                const lastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+                day += lastMonth.getDate();
+                preciseMonths -= 1;
+            }
+
+            const daysInMonth = (new Date(now.getFullYear(), now.getMonth() + 1, 0)).getDate();
+            const decimalMonths = preciseMonths + (day / daysInMonth);
+            
+            const displayMonths = Math.floor(decimalMonths);
+            const displayDays = Math.round((decimalMonths - displayMonths) * 30.4375);
+
+            return {
+                totalMonths: parseFloat(decimalMonths.toFixed(2)),
+                display: `${displayMonths} bulan ${displayDays} hari`
+            };
+        } 
         function getIndexTitle(index) {
             switch (index) {
                 case 'WFA': return 'Berat Badan per Usia (BB/U)';
@@ -1596,8 +1384,6 @@
                 default: return index;
             }
         }
-
-        /** Merender kartu hasil status gizi. */
         function renderResults(results) {
             const resultsGrid = document.getElementById('results-grid');
             resultsGrid.innerHTML = '';
@@ -1610,7 +1396,6 @@
                 const bgColor = res.color.replace('bg-', 'bg-');
                 card.className = `card-result rounded-lg ${bgColor} text-secondary border border-gray-200`;
                 
-                // Menghapus bagian L, M, S dan garis pemisah
                 card.innerHTML = `
                     <h4 class="font-bold text-center">${res.title}</h4>
                     <div class="mt-1 text-center">
@@ -1621,15 +1406,11 @@
                 resultsGrid.appendChild(card);
             }
             
-            // Setelah merender, pastikan akordion Ringkasan Klasifikasi menyesuaikan tingginya jika terbuka
             const accordionContent = document.getElementById('accordion-content-summary');
             if (accordionContent.style.maxHeight !== '0px') {
                 accordionContent.style.maxHeight = accordionContent.scrollHeight + "px";
             }
         }
-
-        // --- FUNGSI VISUALISASI CANVAS ---
-
         window.updateVisualization = function() {
             const canvas = document.getElementById('zscore-canvas');
             const ctx = canvas.getContext('2d');
@@ -1657,34 +1438,29 @@
             const zScore = results.zScore;
             zScoreLabel.textContent = `${results.title}: Z-score ${zScore.toFixed(2)}`;
 
-            // Konfigurasi Visualisasi
-            const minZ = -4; // Z-score minimum yang ditampilkan
-            const maxZ = 4;  // Z-score maksimum yang ditampilkan
+            const minZ = -4; 
+            const maxZ = 4;  
             const zRange = maxZ - minZ;
             
             const padding = 30;
             const chartWidth = width - 2 * padding;
             const chartHeight = height - 2 * padding;
 
-            // Fungsi mapping Z-score ke posisi Y
             const mapZToY = (z) => padding + chartHeight * (1 - (z - minZ) / zRange);
 
-            // Warna Kurva WHO
             const curveColors = {
-                '+3': '#ef4444', // Danger (Red)
-                '+2': '#f59e0b', // Warning (Amber)
-                '+1': '#3b82f6', // Info (Blue)
-                '0': '#10b981', // Success (Green, Median)
-                '-1': '#3b82f6', // Info (Blue)
-                '-2': '#f59e0b', // Warning (Amber)
-                '-3': '#ef4444'  // Danger (Red)
+                '+3': '#ef4444', 
+                '+2': '#f59e0b', 
+                '+1': '#3b82f6', 
+                '0': '#10b981', 
+                '-1': '#3b82f6', 
+                '-2': '#f59e0b', 
+                '-3': '#ef4444' 
             };
 
-            // 1. Gambar Background Area
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, width, height);
 
-            // 2. Gambar Garis Z-score (Horizontal)
             const zLines = [3, 2, 1, 0, -1, -2, -3];
             ctx.textAlign = 'right';
             ctx.font = '10px Inter';
@@ -1693,7 +1469,6 @@
                 const y = mapZToY(z);
                 const color = curveColors[z.toString()];
 
-                // Garis
                 ctx.beginPath();
                 ctx.strokeStyle = color;
                 ctx.lineWidth = (z === 0) ? 2 : 1;
@@ -1702,35 +1477,29 @@
                 ctx.lineTo(width - padding, y);
                 ctx.stroke();
 
-                // Label
                 ctx.fillStyle = color;
                 ctx.fillText(`Z=${z}`, padding - 5, y + 4);
             });
-            ctx.setLineDash([]); // Reset line dash
+            ctx.setLineDash([]); 
 
-            // 3. Gambar Titik Data Anak
             const dataY = mapZToY(zScore);
-            const dataX = width / 2; // Titik tengah
+            const dataX = width / 2; 
 
-            // Lingkaran luar (border)
             ctx.beginPath();
             ctx.arc(dataX, dataY, 10, 0, Math.PI * 2, false);
             ctx.fillStyle = '#000000';
             ctx.fill();
             
-            // Lingkaran dalam (data point)
             ctx.beginPath();
             ctx.arc(dataX, dataY, 8, 0, Math.PI * 2, false);
             ctx.fillStyle = results.color === 'bg-danger' ? '#ef4444' : (results.color === 'bg-warning' ? '#f59e0b' : '#10b981');
             ctx.fill();
 
-            // Teks Z-score di samping titik
             ctx.fillStyle = '#000000';
             ctx.textAlign = 'left';
             ctx.font = '12px Inter';
             ctx.fillText(`Anak: ${zScore.toFixed(2)}`, dataX + 15, dataY + 4);
 
-            // 4. Garis Vertikal (untuk estetika)
             ctx.beginPath();
             ctx.strokeStyle = '#d1d5db';
             ctx.lineWidth = 1;
@@ -1740,19 +1509,95 @@
             ctx.lineTo(width - padding, height - padding);
             ctx.stroke();
 
-            // 5. Label Sumbu Y
             ctx.save();
             ctx.translate(10, height / 2);
             ctx.rotate(-Math.PI / 2);
             ctx.textAlign = 'center';
-            ctx.fillStyle = '#4b5563'; // Gray-600
+            ctx.fillStyle = '#4b5563'; 
             ctx.fillText('Z-score (Simpangan Baku)', 0, 0);
             ctx.restore();
         }
+        
+        /** Fungsi baru untuk mengatur indeks tabel yang dipilih */
+        window.setTableIndex = function(index) {
+            window.currentTableIndex = index;
+            window.renderChildList();
+        }
 
+        // --- FUNGSI COPY DATA (BARU) ---
+        window.copyFilteredDataToClipboard = function() {
+            const index = window.currentTableIndex;
+            const profiles = window.allChildProfiles;
+
+            if (profiles.length === 0) {
+                window.showMessage('Tidak ada data profil yang tersimpan untuk disalin.', 'warning');
+                return;
+            }
+
+            // Headers
+            const headerIndex = {
+                'WFA': 'BB/U (Z)',
+                'HFA': 'TB/U (Z)',
+                'WFL': 'BB/TB (Z)',
+                'BFA': 'IMT/U (Z)'
+            };
+
+            let tsv = ['No', 'Nama', 'JK', 'Tgl Lahir (HH/BB/TTTT)', 'BB (kg)', 'TB/PB (cm)', 'Umur', headerIndex[index], 'Status'].join('\t') + '\n';
+            
+            profiles.forEach((data, i) => {
+                const status = data.lastStatus[index] || {};
+                const zScore = status.zScore === 'N/A' || typeof status.zScore !== 'number' ? 'N/A' : status.zScore.toFixed(2);
+                const classification = status.classification || 'N/A';
+                
+                const dobDisplay = window.dateToDMY(data.dob); 
+                const ageResultForTable = calculateAge(data.dob);
+                const ageDisplayForTable = ageResultForTable ? ageResultForTable.display : 'Tgl Salah';
+                
+                const row = [
+                    i + 1,
+                    data.name,
+                    data.sex === 'male' ? 'L' : 'P',
+                    dobDisplay,
+                    data.weight,
+                    data.height,
+                    ageDisplayForTable,
+                    zScore,
+                    classification
+                ].join('\t');
+                
+                tsv += row + '\n';
+            });
+
+            let success = false;
+            let tempElement = document.createElement('textarea');
+            tempElement.value = tsv;
+            tempElement.setAttribute('readonly', '');
+            tempElement.style.position = 'absolute';
+            tempElement.style.left = '-9999px';
+            document.body.appendChild(tempElement);
+            tempElement.select();
+            
+            try {
+                success = document.execCommand('copy');
+            } catch (err) {
+                console.error('Gagal menyalin:', err);
+                success = false;
+            } finally {
+                document.body.removeChild(tempElement);
+            }
+
+            if (success) {
+                window.showMessage(`Berhasil menyalin ${profiles.length} baris data ${index} ke clipboard. Siap ditempel di Excel!`, 'success');
+            } else {
+                window.showMessage('Gagal menyalin data ke clipboard. Peramban (browser) Anda mungkin memblokir fungsi ini.', 'danger');
+            }
+        };
+        
         // --- INITIALIZATION ---
-
         window.onload = function() {
+            // Pasang event listener masking TTL
+            applyMaskingListeners();
+            
             // Inisialisasi akordion agar tertutup saat pertama kali dimuat
             const accordionContentSummary = document.getElementById('accordion-content-summary');
             const accordionContentResults = document.getElementById('accordion-content-results');
@@ -1769,8 +1614,10 @@
             document.getElementById('sex').value = 'male';
             document.getElementById('weight').value = '';
             document.getElementById('height').value = '';
+            
+            // Muat profil dari localStorage dan render list
+            window.loadChildProfiles();
 
-            // MEMPERBAIKI: Menggunakan window.calculateNutritionStatus() untuk akses global
             window.calculateNutritionStatus(); 
             window.updateVisualization(); 
             
