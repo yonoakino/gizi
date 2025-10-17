@@ -191,7 +191,7 @@
                 <!-- START: AKORDION IMPOR/EKSPOR (Di Kolom Kiri) -->
                 <div class="mt-4">
                     <button id="accordion-toggle-import" onclick="toggleAccordion('accordion-content-import', 'accordion-icon-import')" class="w-full flex justify-between items-center p-3 bg-secondary text-white font-bold rounded-lg hover:bg-gray-700 transition duration-150 text-left text-sm">
-                        <h2 class="font-bold">Impor / Ekspor Data</h2>
+                        <h2 class="font-bold">Impor Data</h2>
                         <svg class="w-4 h-4 transition-transform duration-300 transform" id="accordion-icon-import" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     <!-- Konten akordion Import Data Profil -->
@@ -213,13 +213,7 @@
                                 </button>
                             </div>
 
-                            <div class="pt-2 border-t border-subtle">
-                                <p class="text-xs text-gray-600 font-semibold mb-2">Ekspor Data Profil</p>
-                                <button onclick="exportFilteredDataToCSV()" class="w-full p-2 bg-success text-white font-bold rounded-lg hover:bg-green-700 transition duration-150 text-sm">
-                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                    Export Data (.csv)
-                                </button>
-                            </div>
+                            <!-- Menghilangkan DIV Export Data Profil -->
 
                         </div>
                     </div>
@@ -670,10 +664,10 @@
             [30, -0.248, 16.015, 0.087], [31, -0.260, 15.967, 0.088], [32, -0.270, 15.923, 0.088], [33, -0.279, 15.882, 0.088], [34, -0.285, 15.844, 0.088], 
             [35, -0.290, 15.808, 0.089], [36, -0.293, 15.776, 0.089], [37, -0.294, 15.746, 0.089], [38, -0.293, 15.719, 0.089], [39, -0.290, 15.695, 0.089], 
             [40, -0.286, 15.673, 0.090], [41, -0.280, 15.653, 0.090], [42, -0.273, 15.636, 0.090], [43, -0.264, 15.621, 0.090], [44, -0.254, 15.608, 0.090], 
-            [45, -0.298, 14.511, 0.085], [46, -0.277, 14.492, 0.085], [47, -0.255, 14.475, 0.086], [48, -0.232, 14.461, 0.086], [49, -0.208, 14.449, 0.086], 
-            [50, -0.183, 14.438, 0.086], [51, -0.158, 14.430, 0.086], [52, -0.132, 14.423, 0.087], [53, -0.105, 14.419, 0.087], [54, -0.078, 14.417, 0.087], 
-            [55, -0.051, 14.416, 0.087], [56, -0.023, 14.417, 0.087], [57, 0.005, 14.420, 0.088], [58, 0.033, 14.424, 0.088], [59, 0.062, 14.430, 0.088], 
-            [60, 0.091, 14.438, 0.088]
+            [45, -0.243, 15.597, 0.090], [46, -0.231, 15.589, 0.091], [47, -0.218, 15.582, 0.091], [48, -0.204, 15.578, 0.091], [49, -0.189, 15.575, 0.091], 
+            [50, -0.174, 15.574, 0.092], [51, -0.157, 15.576, 0.092], [52, -0.140, 15.579, 0.092], [53, -0.123, 15.584, 0.092], [54, -0.104, 15.592, 0.093], 
+            [55, -0.085, 15.602, 0.093], [56, -0.066, 15.613, 0.093], [57, -0.046, 15.627, 0.093], [58, -0.026, 15.642, 0.094], [59, -0.005, 15.660, 0.094], 
+            [60, 0.016, 15.679, 0.094]
         ];
 
         // IMT/U - Perempuan (BFA Female 0-60m)
@@ -693,7 +687,6 @@
             [60, 0.091, 14.438, 0.088]
         ];
 
-        // --- DATA LMS WHO REFERENCE 5-19 TAHUN (Interpolasi berdasarkan tabel WHO) ---
         // Poin data TB/U (HFA) Male 61-228m
         const HFA_M_LMS_61_228_POINTS = [
             [60, 0.002, 114.6, 0.040], [72, -0.016, 120.3, 0.042], [84, -0.027, 125.4, 0.045], [96, -0.035, 130.3, 0.047], 
@@ -1722,8 +1715,8 @@
                 'BFA': 'IMT/U (Z)'
             };
 
-            // Menggunakan koma (,) sebagai pemisah
-            let csv = ['No', 'Nama', 'JK', 'Tgl Lahir (HH/BB/TTTT)', 'BB (kg)', 'TB/PB (cm)', 'Umur', headerIndex[index], 'Status'].join(',') + '\n';
+            // Menggunakan TAB (\t) sebagai pemisah (TSV) untuk kompatibilitas Excel terbaik
+            let tsv = ['No', 'Nama', 'JK', 'Tgl Lahir (HH/BB/TTTT)', 'BB (kg)', 'TB/PB (cm)', 'Umur', headerIndex[index], 'Status'].join('\t') + '\n';
             
             profiles.forEach((data, i) => {
                 const status = data.lastStatus[index] || {};
@@ -1739,10 +1732,10 @@
                 const heightDisplay = formatNumber(data.height);
                 const sexDisplay = data.sex === 'male' ? 'Laki-laki' : 'Perempuan'; // Lokal
                 
-                // Peringatan: Data yang mengandung koma (,) di dalamnya (misal nama dengan koma) dapat menyebabkan kolom bergeser.
+                // Peringatan: Menggunakan kutip ganda untuk nilai nama.
                 const row = [
                     i + 1,
-                    `"${data.name}"`, // Menggunakan tanda kutip ganda untuk menangani koma di nama (jika ada)
+                    `"${data.name}"`, 
                     sexDisplay,
                     dobDisplay,
                     weightDisplay,
@@ -1750,23 +1743,25 @@
                     ageDisplayForTable,
                     zScoreDisplay,
                     classification
-                ].join(',');
+                ].join('\t'); // Menggunakan TAB sebagai pemisah (TSV)
                 
-                csv += row + '\n';
+                tsv += row + '\n';
             });
 
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+            // MIME type yang paling netral untuk data TSV/Teks adalah text/csv atau text/plain.
+            // Menggunakan text/csv untuk ekstensi .csv (yang akan dibuka di Excel)
+            const blob = new Blob([tsv], { type: 'text/csv;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             
             link.href = url;
-            link.download = `data_gizi_${index}_${new Date().toISOString().slice(0, 10)}.csv`;
+            link.download = `data_gizi_${index}_${new Date().toISOString().slice(0, 10)}.csv`; // Mengubah ekstensi kembali ke .csv
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
             
-            window.showMessage('Data berhasil diekspor ke file CSV.', 'success');
+            window.showMessage('Data berhasil diekspor ke file Excel (.csv). Harap buka dan simpan sebagai .xlsx jika diperlukan.', 'success');
         }
 
 
