@@ -168,13 +168,9 @@
                            class="w-2/3 p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
                 </div>
 
-                <!-- Usia Terhitung (Otomatis) -->
-                <div class="flex items-center justify-between">
-                    <label for="age-display" class="text-sm font-medium text-gray-700 w-1/3">Usia Terhitung</label>
-                    <div id="age-display"
-                           class="w-2/3 p-2 border border-gray-300 rounded-lg auto-calculated-field text-sm text-gray-600">
-                        <!-- Usia akan diisi oleh JS -->
-                    </div>
+                <!-- Usia Terhitung (Otomatis) - Dihapus dari tampilan, tetapi disimpan untuk logika peringatan -->
+                <div id="age-display-container" class="hidden">
+                    <div id="age-display"></div>
                 </div>
 
                 <!-- Aksi Simpan -->
@@ -232,7 +228,7 @@
                                 </tr>
                             </thead>
                             <tbody id="child-list">
-                                <tr><td colspan="6" class="text-center text-gray-500">Memuat data...</td></tr>
+                                <tr><td colspan="7" class="text-center text-gray-500">Memuat data...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -613,11 +609,12 @@
                 'BFA': 'IMT/U (Z-score)'
             };
 
-            // 2. GENERATE HEADER HANYA DENGAN 6 KOLOM
+            // 2. GENERATE HEADER HANYA DENGAN 7 KOLOM (Termasuk Umur)
             thead.innerHTML = `
                 <th class="p-1">No</th>
                 <th class="p-1">Nama</th>
                 <th class="p-1">JK</th>
+                <th class="p-1">Umur</th>
                 <th class="p-1">${indexTitles[selectedIndex]}</th>
                 <th class="p-1">Status</th>
                 <th class="p-1">Aksi</th>
@@ -626,8 +623,8 @@
             tbody.innerHTML = '';
             
             if (filteredProfiles.length === 0) {
-                // Pastikan colspan sesuai dengan jumlah kolom baru (6)
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-500 p-2">Tidak ada profil yang cocok atau belum tersimpan.</td></tr>';
+                // Pastikan colspan sesuai dengan jumlah kolom baru (7)
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-500 p-2">Tidak ada profil yang cocok atau belum tersimpan.</td></tr>';
                 return;
             }
             
@@ -644,6 +641,11 @@
                 const zScore = getZScoreDisplay(activeStatus);
                 const classificationText = getStatusKategori(activeStatus);
                 const activeZScore = activeStatus?.zScore;
+                
+                // Hitung usia untuk tampilan tabel
+                const ageResultForTable = calculateAge(data.dob); 
+                const ageDisplayForTable = ageResultForTable ? ageResultForTable.display : 'Tgl Salah';
+
 
                 const row = document.createElement('tr');
                 row.className = 'border-t hover:bg-gray-50 cursor-pointer';
@@ -670,11 +672,12 @@
                     }
                 }
 
-                // 3. GENERATE KONTEN BARIS SESUAI 6 KOLOM
+                // 3. GENERATE KONTEN BARIS SESUAI 7 KOLOM
                 row.innerHTML = `
                     <td>${index + 1}</td>
                     <td class="font-medium truncate">${data.name}</td>
                     <td>${data.sex === 'male' ? 'L' : 'P'}</td>
+                    <td class="text-center">${ageDisplayForTable}</td>
                     <td class="text-center">${zScore}</td>
                     <td id="status_cell_${data.id}" class="${statusBgClass} font-bold">${classificationText}</td>
                     <td>
@@ -716,7 +719,7 @@
             }, (error) => {
                 console.error("Error listening to documents: ", error);
                 const tbody = document.getElementById('child-list');
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-red-500 p-2">Gagal memuat profil.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-red-500 p-2">Gagal memuat profil.</td></tr>'; // Updated colspan
             });
         }
         
@@ -758,17 +761,8 @@
         // Batas Usia Maksimal: 19 tahun * 12 bulan = 228 bulan
         const MAX_AGE_MONTHS = 228;
 
-        // --- GLOBAL STATE ---
-        let currentAgeMonths = 0;
-        window.currentZScoreResults = {};
-        window.lmsDataCache = {}; // Cache for LMS data based on index and sex
-        window.currentTableIndex = 'WFA'; // Default index for table view
-        
-        // UTILITY: Format Date to ISO String (Dipindahkan ke sini agar tersedia global sebelum window.onload)
-        window.dateToISO = (date) => date.toISOString().split('T')[0];
-
         // --- DATA REFERENSI WHO-LMS LENGKAP (0-60m) dan LMS WHO Reference (61-228m) ---
-        
+
         // BB/U - Laki-laki (WFA Male 0-60m)
         const WFA_M_LMS = [
             [0, 1.156, 3.322, 0.145], [1, 1.146, 4.545, 0.141], [2, 1.132, 5.666, 0.136], [3, 1.111, 6.592, 0.131], [4, 1.085, 7.301, 0.126], 
@@ -935,6 +929,15 @@
             [204, 0.659, 21.14, 0.186], [216, 0.706, 21.28, 0.199], [228, 0.729, 21.34, 0.212]
         ];
 
+
+        // --- GLOBAL STATE ---
+        let currentAgeMonths = 0;
+        window.currentZScoreResults = {};
+        window.lmsDataCache = {}; // Cache for LMS data based on index and sex
+        window.currentTableIndex = 'WFA'; // Default index for table view
+        
+        // UTILITY: Format Date to ISO String (Dipindahkan ke sini agar tersedia global sebelum window.onload)
+        window.dateToISO = (date) => date.toISOString().split('T')[0];
 
         // --- FUNGSI DATE MASKING (BARU) ---
         function applyDateMask(input) {
@@ -1284,7 +1287,7 @@
             const weight = formData.weight;
             const height = formData.height;
             
-            const ageDisplay = document.getElementById('age-display');
+            const ageDisplayBox = document.getElementById('age-display');
             const resultsGrid = document.getElementById('results-grid');
             
             // Reset UI for calculation part
@@ -1302,20 +1305,24 @@
             
             const ageResult = calculateAge(dobString);
             
+            // Simpan status usia ke dalam elemen tersembunyi
+            const ageDisplayStatus = ageResult ? ageResult.display : 'Format Tgl Salah / Belum Lengkap';
+            if (ageDisplayBox) ageDisplayBox.textContent = ageDisplayStatus; // Simpan di background
+
             if (!ageResult) {
                 validForCalc = false;
-                if (ageDisplay) ageDisplay.textContent = 'Format Tgl Salah';
+                // Tampilkan peringatan hanya jika input terisi penuh (10 karakter) tapi invalid
+                if (dobString && dobString.length === 10) { 
+                    window.showMessage('PERINGATAN: Pastikan Tanggal Lahir diisi dengan format HH/BB/TTTT yang valid.', 'danger'); 
+                }
             } else {
                 currentAgeMonths = ageResult.totalMonths;
-                if (ageDisplay) {
-                    ageDisplay.textContent = ageResult.display; // <-- PASTIKAN UMUR DISET DI SINI!
-                }
             }
 
             // 2. Cek Batas Usia
             if (!validForCalc) {
                  // Hanya tampilkan peringatan input jika usia tidak dapat dihitung
-                if (displayWarning) {
+                if (displayWarning && ageResult) { // Cek ageResult untuk menghindari tumpang tindih pesan format salah
                     window.showMessage('PERINGATAN: Pastikan semua data antropometri (termasuk Tanggal Lahir yang valid) sudah terisi.', 'danger');
                 }
                 window.updateVisualization();
@@ -1323,8 +1330,8 @@
             }
             
             if (currentAgeMonths > MAX_AGE_MONTHS) {
-                 // Usia di atas batas, tampilkan peringatan batas usia, tetapi JANGAN kembalikan validForCalc ke false
-                window.showMessage(`PERINGATAN: Usia ${ageResult.display} melebihi batas maksimum ${MAX_AGE_MONTHS} bulan (19 tahun). Perhitungan Z-score dihentikan.`, 'danger');
+                 // Usia di atas batas
+                window.showMessage(`PERINGATAN: Usia ${ageDisplayStatus} melebihi batas maksimum ${MAX_AGE_MONTHS} bulan (19 tahun). Perhitungan Z-score dihentikan.`, 'danger');
                 window.currentZScoreResults = {};
                 window.updateVisualization();
                 return; 
