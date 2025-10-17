@@ -33,7 +33,7 @@
             background-color: #f9fafb; /* Gray 50 */
         }
         .card {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2dpbg-gray-50px rgba(0, 0, 0, 0.05);
         }
         input[type="number"]::-webkit-outer-spin-button,
         input[type="number"]::-webkit-inner-spin-button {
@@ -109,6 +109,14 @@
             from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Gaya TTL Custom Masking */
+        #dob {
+            font-size:14px;
+            padding: 6px; /* slightly less padding */
+            text-align:center;
+            letter-spacing:1px;
+        }
     </style>
 </head>
 <body class="font-sans min-h-screen p-2 md:p-4 flex flex-col items-center">
@@ -129,14 +137,16 @@
                 <!-- Nama Anak -->
                 <div class="flex items-center justify-between">
                     <label for="child-name" class="text-sm font-medium text-gray-700 w-1/3">Nama Anak</label>
-                    <input type="text" id="child-name" value="Anak Saya" oninput="calculateNutritionStatus()"
+                    <input type="text" id="child-name" value="" oninput="calculateNutritionStatus()"
+                           placeholder="Masukkan Nama Anak"
                            class="w-2/3 p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
                 </div>
 
                 <!-- Tanggal Lahir (TTL) -->
                 <div class="flex items-center justify-between">
                     <label for="dob" class="text-sm font-medium text-gray-700 w-1/3">TTL</label>
-                    <input type="text" id="dob" oninput="applyDateMask(this); calculateNutritionStatus();" 
+                    <!-- Menghapus oninput lama, karena kini dikendalikan oleh event listener -->
+                    <input type="text" id="dob" value="HH/BB/TTTT" 
                            placeholder="HH/BB/TTTT"
                            maxlength="10"
                            class="w-2/3 p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
@@ -155,16 +165,16 @@
                 <!-- Berat Badan (BB) -->
                 <div class="flex items-center justify-between">
                     <label for="weight" class="text-sm font-medium text-gray-700 w-1/3">BB (kg)</label>
-                    <input type="number" id="weight" value="13.0" step="0.1" min="0" oninput="calculateNutritionStatus()" 
-                           placeholder="13.0" 
+                    <input type="number" id="weight" value="" step="0.1" min="0" oninput="calculateNutritionStatus()" 
+                           placeholder="Cth: 13.0 kg" 
                            class="w-2/3 p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
                 </div>
 
                 <!-- Tinggi Badan (TB/PB) -->
                 <div class="flex items-center justify-between">
                     <label for="height" class="text-sm font-medium text-gray-700 w-1/3">TB/PB (cm)</label>
-                    <input type="number" id="height" value="90.0" step="0.1" min="0" oninput="calculateNutritionStatus()" 
-                           placeholder="90.0" 
+                    <input type="number" id="height" value="" step="0.1" min="0" oninput="calculateNutritionStatus()" 
+                           placeholder="Cth: 90.0 cm" 
                            class="w-2/3 p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
                 </div>
 
@@ -308,7 +318,21 @@
             </div>
         </div>
     </div>
-    <!-- END MODAL -->
+    <!-- END MODAL HAPUS -->
+
+    <!-- MODAL VALIDASI BARU (TTL/Age Limit) -->
+    <div id="validation-modal" class="modal-overlay hidden">
+        <div class="modal-content border-t-4 border-danger">
+            <h3 id="validation-modal-title" class="text-lg font-bold text-danger mb-3">Peringatan Validasi!</h3>
+            <p id="validation-modal-message" class="text-sm text-gray-700 mb-4">
+                <!-- Pesan akan diisi di sini -->
+            </p>
+            <div class="flex justify-end space-x-2 mt-4">
+                <button onclick="hideValidationModal()" class="px-4 py-2 text-sm font-semibold rounded-lg bg-primary text-white hover:bg-green-700 transition duration-150">OK</button>
+            </div>
+        </div>
+    </div>
+    <!-- END MODAL VALIDASI -->
 
     <!-- Import Firebase Services (MUST BE type="module") -->
     <script type="module">
@@ -348,6 +372,18 @@
             window.pendingDeletionId = null;
             document.getElementById('delete-modal').classList.add('hidden');
         }
+
+        /** Menampilkan modal validasi TTL/Usia. */
+        window.showValidationModal = function(title, message) {
+            document.getElementById('validation-modal-title').textContent = title;
+            document.getElementById('validation-modal-message').textContent = message;
+            document.getElementById('validation-modal').classList.remove('hidden');
+        }
+
+        /** Menyembunyikan modal validasi. */
+        window.hideValidationModal = function() {
+            document.getElementById('validation-modal').classList.add('hidden');
+        }
         
         /** Utility: Converts YYYY-MM-DD to DD/MM/YYYY */
         window.dateToDMY = (isoDate) => {
@@ -365,10 +401,13 @@
         /** Mengambil nilai tanggal lahir dari input date tunggal (tipe text, format DD/MM/YYYY). */
         window.getDOBString = function() {
             const dobInput = document.getElementById('dob').value;
-            if (!dobInput) return null;
+            // Menghapus garis miring default jika input masih MASK
+            const cleanDobInput = dobInput.includes('_') ? '' : dobInput;
+            
+            if (!cleanDobInput || cleanDobInput === '//' || cleanDobInput === MASK_DEFAULT) return null;
 
             // Expecting DD/MM/YYYY format
-            const parts = dobInput.split('/');
+            const parts = cleanDobInput.split('/');
             if (parts.length !== 3) return null;
 
             const [dayStr, monthStr, yearStr] = parts;
@@ -440,6 +479,7 @@
         window.saveChildProfile = async function() {
             // Reset konfirmasi hapus jika ada
             window.hideDeleteModal();
+            window.hideValidationModal();
 
             if (!window.userId || window.userId === 'anonymous') {
                 document.getElementById('message-box').innerHTML = '<span class="text-red-800">Gagal Simpan: Autentikasi belum siap. Coba lagi.</span>';
@@ -454,23 +494,45 @@
             let errorMessage = '';
 
             // 2. Validasi input dasar
-            if (!name) { errorMessage = 'Nama Anak harus diisi.'; }
-            else if (!dob) { errorMessage = 'Tanggal Lahir harus diisi (format: HH/BB/TTTT).'; }
-            else if (isNaN(weight) || weight <= 0) { errorMessage = 'Berat Badan (BB) harus diisi dengan nilai yang valid (> 0).'; }
-            else if (isNaN(height) || height <= 0) { errorMessage = 'Tinggi/Panjang Badan (TB/PB) harus diisi dengan nilai yang valid (> 0).'; }
+            // Ambil nilai dari DOM secara langsung untuk cek kekosongan
+            const nameValue = document.getElementById('child-name').value.trim();
+            const dobValue = document.getElementById('dob').value;
+            const weightValue = document.getElementById('weight').value.trim();
+            const heightValue = document.getElementById('height').value.trim();
+
+            if (!nameValue) { errorMessage = 'Nama Anak harus diisi.'; }
+            else if (dobValue === MASK || dobValue === MASK_DEFAULT || dobValue === '//' || !dob) { 
+                // Jika TTL tidak terisi/valid, gunakan modal validasi (KASUS 1)
+                window.showValidationModal('Tanggal Lahir Tidak Valid', 'Pastikan Tanggal Lahir diisi lengkap dengan format HH/BB/TTTT yang valid. Cek tanggal, bulan, dan tahun.');
+                return;
+            }
+            else if (weightValue === '' || isNaN(weight) || weight <= 0) { errorMessage = 'Berat Badan (BB) harus diisi dengan nilai yang valid (> 0).'; }
+            else if (heightValue === '' || isNaN(height) || height <= 0) { errorMessage = 'Tinggi/Panjang Badan (TB/PB) harus diisi dengan nilai yang valid (> 0).'; }
             
             if (errorMessage) {
+                // Tampilkan pesan error umum untuk input non-TTL (KASUS 3)
                 window.showMessage(`Gagal Simpan: ${errorMessage}`, 'danger');
                 return;
             }
+
+            // 3. Cek Batas Usia
+            const ageResult = calculateAge(dob);
+            const currentAgeMonths = ageResult ? ageResult.totalMonths : 0;
+            const ageDisplayStatus = ageResult ? ageResult.display : 'Format Tgl Salah / Belum Lengkap';
             
-            // 3. Paksa perhitungan status gizi terbaru
+            if (currentAgeMonths > MAX_AGE_MONTHS) {
+                 // Usia di atas batas (KASUS 2)
+                window.showValidationModal('Batas Usia Terlampaui', `Usia anak (${ageDisplayStatus}) melebihi batas maksimum WHO-LMS (19 tahun / ${MAX_AGE_MONTHS} bulan). Data tidak akan disimpan.`);
+                return; 
+            }
+            
+            // 4. Paksa perhitungan status gizi terbaru
             window.calculateNutritionStatus(); 
 
-            // 4. Ambil hasil status gizi dari global state setelah perhitungan
+            // 5. Ambil hasil status gizi dari global state setelah perhitungan
             const lastStatus = window.currentZScoreResults; 
             
-            // 5. Validasi hasil status gizi
+            // 6. Validasi hasil status gizi
             const validStatus = Object.values(lastStatus).some(res => res && res.zScore && res.zScore !== 'N/A');
             
             if (!validStatus) {
@@ -487,7 +549,11 @@
 
             // Gabungkan data antropometri dan status gizi terbaru
             const childData = { 
-                ...formData, 
+                name: nameValue, // Gunakan nilai yang sudah di-trim
+                dob: dob,
+                sex: formData.sex,
+                weight: weight,
+                height: height,
                 lastStatus: lastStatus, 
                 primaryIndex: primaryIndex, // Simpan indeks utama
                 savedAt: new Date() 
@@ -515,6 +581,7 @@
         window.updateProfilePrimaryIndex = async function(docId, index, event) {
             if (event) event.stopPropagation();
             window.hideDeleteModal();
+            window.hideValidationModal();
 
             const docRef = doc(db, 'artifacts', appId, 'users', window.userId, 'children', docId);
 
@@ -534,6 +601,7 @@
         /** Memuat data anak yang dipilih ke form. */
         window.loadChildData = function(id, data) {
             window.hideDeleteModal();
+            window.hideValidationModal();
             window.currentChildId = id;
             document.getElementById('child-name').value = data.name;
 
@@ -591,6 +659,7 @@
          */
         window.renderChildList = function() {
             window.hideDeleteModal(); 
+            window.hideValidationModal();
             const searchText = document.getElementById('profile-search').value.toLowerCase();
             const selectedIndex = window.currentTableIndex; // Ambil indeks terpilih
             
@@ -726,24 +795,15 @@
         /** Clears the current data and sets a new child profile mode. */
         window.clearCurrentChild = function() {
             window.hideDeleteModal();
+            window.hideValidationModal();
             window.currentChildId = null;
             
-            // Reset antropometri defaults
-            const today = new Date();
-            const defaultDOB = new Date();
-            defaultDOB.setFullYear(today.getFullYear() - 2); // 2 tahun lalu
-            
-            // Format YYYY-MM-DD
-            const defaultDOBISO = window.dateToISO(defaultDOB); 
-
-            document.getElementById('child-name').value = 'Anak Baru';
-            
-            // NEW: Set single input date value in D/M/Y format
-            document.getElementById('dob').value = window.dateToDMY(defaultDOBISO);
-
+            // Set input kosong kecuali JK
+            document.getElementById('child-name').value = '';
+            document.getElementById('dob').value = MASK_DEFAULT; // Menggunakan MASK_DEFAULT
             document.getElementById('sex').value = 'male';
-            document.getElementById('weight').value = 13.0;
-            document.getElementById('height').value = 90.0;
+            document.getElementById('weight').value = '';
+            document.getElementById('height').value = '';
             
             window.calculateNutritionStatus();
             document.getElementById('profile-search').value = ''; // Clear search field
@@ -761,7 +821,144 @@
         // Batas Usia Maksimal: 19 tahun * 12 bulan = 228 bulan
         const MAX_AGE_MONTHS = 228;
 
-        // --- DATA REFERENSI WHO-LMS LENGKAP (0-60m) dan LMS WHO Reference (61-228m) ---
+        // --- Variabel Masking TTL ---
+        const MASK_DEFAULT = 'HH/BB/TTTT';
+        const MASK = '__/__/____';
+        const SLOT_IDX = [0,1,3,4,6,7,8,9]; // posisi angka
+
+        // --- FUNGSI MASKING TTL ---
+        const el = document.getElementById('dob');
+
+        function setCaret(pos){ requestAnimationFrame(()=> el.setSelectionRange(pos,pos)); }
+
+        function nextSlot(from){
+          for (let i=from; i<el.value.length; i++){
+            if (SLOT_IDX.includes(i) && el.value[i] === '_') return i;
+          }
+          return -1;
+        }
+        function prevSlot(from){
+          for (let i=from-1; i>=0; i--){
+            if (SLOT_IDX.includes(i)) return i;
+          }
+          return -1;
+        }
+
+        // Saat fokus: ganti hh/bb/tttt -> __/__/____
+        el.addEventListener('focus', () => {
+          if (el.value === MASK_DEFAULT) el.value = MASK;
+          // taruh kursor di slot kosong pertama
+          const ns = nextSlot(0);
+          setCaret(ns === -1 ? el.value.length : ns);
+        });
+
+        // Jika kosongkan lalu keluar: balikin ke hh/bb/tttt
+        el.addEventListener('blur', () => {
+          const isMaskedAndEmpty = el.value.replace(/\//g,'').replace(/_/g,'').length === 0;
+          if (el.value === MASK || isMaskedAndEmpty) {
+            el.value = MASK_DEFAULT;
+          }
+          // Panggil perhitungan setelah blur untuk validasi terakhir
+          window.calculateNutritionStatus(); 
+        });
+
+        // Handler utama pengetikan
+        el.addEventListener('keydown', (e) => {
+          const k = e.key;
+          const start = el.selectionStart;
+          const end = el.selectionEnd;
+
+          // Panggil calculateNutritionStatus() untuk update real-time
+          // Dijalankan di requestAnimationFrame agar DOM update duluan
+          requestAnimationFrame(() => window.calculateNutritionStatus());
+
+          // Blokir edit langsung pada "/" (biar "/" tidak hilang)
+          if ((start === 2 || start === 5) && (k === 'Backspace' || k === 'Delete')) {
+            e.preventDefault(); return;
+          }
+
+          // Izinkan navigasi
+          const navKeys = ['ArrowLeft','ArrowRight','Home','End','Tab'];
+          if (navKeys.includes(k)) return;
+
+          // Angka: taruh ke slot "_" berikutnya
+          if (/^\d$/.test(k)) {
+            e.preventDefault();
+
+            // kalau ada selection, hapus isinya dulu (ganti jadi "_")
+            if (end > start){
+              let arr = el.value.split('');
+              for (let i=start; i<end; i++){
+                if (SLOT_IDX.includes(i)) arr[i] = '_';
+              }
+              el.value = arr.join('');
+            }
+
+            // target slot = slot kosong pertama dari posisi kursor
+            let pos = nextSlot(start);
+            if (pos === -1) return; // sudah penuh
+
+            let arr = el.value.split('');
+            arr[pos] = k;
+            el.value = arr.join('');
+
+            // lompat ke slot berikutnya, auto-skip "/"
+            const after = nextSlot(pos+1);
+            setCaret(after === -1 ? pos+1 : after);
+            return;
+          }
+
+          // Backspace: kosongkan slot angka sebelumnya dan pindah ke sana
+          if (k === 'Backspace') {
+            e.preventDefault();
+            let pos = prevSlot(start);
+            if (pos === -1) return;
+            let arr = el.value.split('');
+            arr[pos] = '_';
+            el.value = arr.join('');
+            setCaret(pos);
+            return;
+          }
+
+          // Delete: kosongkan slot di posisi kursor (kalau slot angka)
+          if (k === 'Delete') {
+            e.preventDefault();
+            if (SLOT_IDX.includes(start)){
+              let arr = el.value.split('');
+              arr[start] = '_';
+              el.value = arr.join('');
+              setCaret(start);
+            }
+            return;
+          }
+
+          // Blokir semua input non-angka/non-navigasi
+          e.preventDefault();
+        });
+
+        // Jaga agar user tidak bisa paste sembarang: hanya ambil digit
+        el.addEventListener('paste', (e) => {
+          e.preventDefault();
+          const text = (e.clipboardData || window.clipboardData).getData('text') || '';
+          const digits = text.replace(/\D/g,'').slice(0,8); // maksimal 8 digit
+          if (!digits) return;
+
+          let arr = el.value.split('');
+          let idx = nextSlot(el.selectionStart);
+          if (idx === -1) idx = nextSlot(0);
+          let p = idx;
+          for (let d of digits){
+            if (p === -1) break;
+            arr[p] = d;
+            p = nextSlot(p+1);
+          }
+          el.value = arr.join('');
+          setCaret(p === -1 ? 10 : p);
+          // Panggil perhitungan setelah paste
+          window.calculateNutritionStatus(); 
+        });
+
+        // --- DATA REFERENSI WHO-LMS ---
 
         // BB/U - Laki-laki (WFA Male 0-60m)
         const WFA_M_LMS = [
@@ -939,19 +1136,7 @@
         // UTILITY: Format Date to ISO String (Dipindahkan ke sini agar tersedia global sebelum window.onload)
         window.dateToISO = (date) => date.toISOString().split('T')[0];
 
-        // --- FUNGSI DATE MASKING (BARU) ---
-        function applyDateMask(input) {
-            let value = input.value.replace(/\D/g, ''); // Hapus semua non-digit
-            let formatted = '';
-
-            if (value.length > 0) { formatted += value.substring(0, 2); }
-            if (value.length > 2) { formatted += '/' + value.substring(2, 4); }
-            if (value.length > 4) { formatted += '/' + value.substring(4, 8); }
-
-            // Batasi panjang total input (HH/BB/TTTT)
-            input.value = formatted.substring(0, 10);
-        }
-        window.applyDateMask = applyDateMask;
+        // --- FUNGSI DATE MASKING LAMA (DIHAPUS, DIGANTI EVENT LISTENER DI BAWAH) ---
         
         // --- FUNGSI MESSAGE BOX UTILITY (GLOBAL) ---
         function showMessage(text, type = 'info') {
@@ -1005,7 +1190,7 @@
                 'BFA': 'IMT/U (Z)'
             };
 
-            let tsv = ['No', 'Nama', 'JK', 'Tgl Lahir (HH/BB/TTTT)', 'BB (kg)', 'TB/PB (cm)', headerIndex[index], 'Status'].join('\t') + '\n';
+            let tsv = ['No', 'Nama', 'JK', 'Tgl Lahir (HH/BB/TTTT)', 'BB (kg)', 'TB/PB (cm)', 'Umur', headerIndex[index], 'Status'].join('\t') + '\n';
             
             profiles.forEach((data, i) => {
                 const status = data.lastStatus[index] || {};
@@ -1014,6 +1199,8 @@
                 
                 // Konversi tanggal ISO (YYYY-MM-DD) kembali ke HH/BB/TTTT untuk display
                 const dobDisplay = window.dateToDMY(data.dob); 
+                const ageResultForTable = calculateAge(data.dob);
+                const ageDisplayForTable = ageResultForTable ? ageResultForTable.display : 'Tgl Salah';
                 
                 const row = [
                     i + 1,
@@ -1022,6 +1209,7 @@
                     dobDisplay,
                     data.weight,
                     data.height,
+                    ageDisplayForTable,
                     zScore,
                     classification
                 ].join('\t');
@@ -1280,6 +1468,7 @@
         /** Fungsi utama yang dipanggil saat ada perubahan input. */
         window.calculateNutritionStatus = function() {
             window.hideDeleteModal(); // Pastikan konfirmasi hapus dibatalkan
+            window.hideValidationModal(); // Sembunyikan modal validasi jika ada
             
             const formData = window.getFormData();
             const dobString = formData.dob;
@@ -1298,10 +1487,28 @@
             let displayWarning = false;
 
             // 1. Validasi Input Dasar
-            if (!formData.name || !dobString || isNaN(weight) || weight <= 0 || isNaN(height) || height <= 0) {
+            // Ambil nilai dari DOM secara langsung untuk cek kekosongan
+            const nameValue = document.getElementById('child-name').value.trim();
+            const dobValue = document.getElementById('dob').value;
+            const weightValue = document.getElementById('weight').value.trim();
+            const heightValue = document.getElementById('height').value.trim();
+
+            if (!nameValue) { validForCalc = false; displayWarning = true; }
+            else if (dobValue === MASK || dobValue === MASK_DEFAULT || dobValue === '//' || !dobString) { 
+                // KASUS 1: TTL Invalid atau Belum Lengkap/diisi
+                if (dobValue.replace(/_/g, '').length === 10) {
+                     window.showValidationModal('Tanggal Lahir Tidak Valid', 'Pastikan Tanggal Lahir diisi lengkap dengan format HH/BB/TTTT yang valid (misal: 01/01/2020). Cek kombinasi Hari, Bulan, dan Tahun.');
+                } else if (dobValue !== MASK_DEFAULT) {
+                    // Jika user sudah mulai mengetik tapi belum lengkap, jangan tampilkan modal, cukup pesan peringatan umum.
+                    displayWarning = true;
+                } else {
+                     displayWarning = true;
+                }
                 validForCalc = false;
-                displayWarning = true;
             }
+            else if (weightValue === '' || isNaN(weight) || weight <= 0) { validForCalc = false; displayWarning = true; }
+            else if (heightValue === '' || isNaN(height) || height <= 0) { validForCalc = false; displayWarning = true; }
+            
             
             const ageResult = calculateAge(dobString);
             
@@ -1309,29 +1516,25 @@
             const ageDisplayStatus = ageResult ? ageResult.display : 'Format Tgl Salah / Belum Lengkap';
             if (ageDisplayBox) ageDisplayBox.textContent = ageDisplayStatus; // Simpan di background
 
-            if (!ageResult) {
-                validForCalc = false;
-                // Tampilkan peringatan hanya jika input terisi penuh (10 karakter) tapi invalid
-                if (dobString && dobString.length === 10) { 
-                    window.showMessage('PERINGATAN: Pastikan Tanggal Lahir diisi dengan format HH/BB/TTTT yang valid.', 'danger'); 
-                }
-            } else {
+            if (ageResult) {
                 currentAgeMonths = ageResult.totalMonths;
+            } else {
+                currentAgeMonths = 0;
             }
 
             // 2. Cek Batas Usia
             if (!validForCalc) {
-                 // Hanya tampilkan peringatan input jika usia tidak dapat dihitung
-                if (displayWarning && ageResult) { // Cek ageResult untuk menghindari tumpang tindih pesan format salah
-                    window.showMessage('PERINGATAN: Pastikan semua data antropometri (termasuk Tanggal Lahir yang valid) sudah terisi.', 'danger');
+                 // Hanya tampilkan peringatan input jika data antropometri kosong (Non-TTL error)
+                if (displayWarning) {
+                    window.showMessage('PERINGATAN: Pastikan semua data antropometri (Nama, TTL, BB, TB/PB) sudah terisi dan valid.', 'danger');
                 }
                 window.updateVisualization();
                 return;
             }
             
             if (currentAgeMonths > MAX_AGE_MONTHS) {
-                 // Usia di atas batas
-                window.showMessage(`PERINGATAN: Usia ${ageDisplayStatus} melebihi batas maksimum ${MAX_AGE_MONTHS} bulan (19 tahun). Perhitungan Z-score dihentikan.`, 'danger');
+                 // KASUS 2: Usia di atas batas
+                window.showValidationModal('Batas Usia Terlampaui', `Usia anak (${ageDisplayStatus}) melebihi batas maksimum WHO-LMS (19 tahun / ${MAX_AGE_MONTHS} bulan). Perhitungan Z-score dihentikan.`);
                 window.currentZScoreResults = {};
                 window.updateVisualization();
                 return; 
@@ -1560,14 +1763,12 @@
                 accordionContentResults.style.maxHeight = '0px';
             }
             
-            // Set Tanggal Hari Ini saat memuat
-            const today = new Date();
-            const defaultDOB = new Date();
-            defaultDOB.setFullYear(today.getFullYear() - 2); // 2 tahun lalu
-            const defaultDOBISO = window.dateToISO(defaultDOB);
-            
-            // Mengatur nilai input TTL dengan format D/M/Y
-            document.getElementById('dob').value = window.dateToDMY(defaultDOBISO); 
+            // Set default values
+            document.getElementById('child-name').value = '';
+            document.getElementById('dob').value = MASK_DEFAULT; 
+            document.getElementById('sex').value = 'male';
+            document.getElementById('weight').value = '';
+            document.getElementById('height').value = '';
 
             // MEMPERBAIKI: Menggunakan window.calculateNutritionStatus() untuk akses global
             window.calculateNutritionStatus(); 
